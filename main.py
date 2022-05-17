@@ -1,17 +1,22 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from rppl_data import RPPLData
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    pass
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+da_ob = RPPLData(images_directory="robophot pics/g/",
+                 images_filter="g")
+da_ob.pars["config_file"] = "test_config.json"
+da_ob.write_config()
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+"""
+TODO:
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+TODO BONUS:
+    move select_fits_file to Utils
+    def plot_fits_file    
+"""
+
+# FIXME
+#   Plotting functions also have confusing names and bad code
+#   Current logs are outright awful
+#   ROMS critetia needs to be rewritten and tested on higher quality data
+#   SINCE I'M CALCULATING "BJD % 1" I'M STUCK WITHIN BOUNDS OF ONE JULIAN DAY
