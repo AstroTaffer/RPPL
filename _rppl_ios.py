@@ -1,30 +1,64 @@
 import json
+from warnings import warn
+
+from astropy.io import ascii
 
 
 class _RPPLSubIOS:
     def __init__(self):
-        self.pars = {}
+        self.head_pars = {}
+        self.calc_pars = {}
+        self.images_table = None
 
-    def read_config(self):
-        with open(self.pars["config_file"], "r") as confile:
+    def read_head_config(self, filename=None):
+        if filename is None:
+            filename = self.head_pars["CONFIG_FILENAME"]
+        with open(filename, "r") as confile:
             buff_dict = json.load(confile)
             for _ in buff_dict.keys():
-                if _ in self.pars:
-                    self.pars[_] = buff_dict[_]
+                if _ in self.head_pars:
+                    self.head_pars[_] = buff_dict[_]
                 else:
-                    print(f"Parameter {_} not recognised --- skipped")
+                    warn(f"Parameter {_} not recognised - skipping")
 
-    def write_config(self):
-        if self.pars["config_file"] is None:
-            print('Parameter config_file not set --- set "config.json" by default')
-            self.pars["config_file"] = "config.json"
-        with open(self.pars["config_file"], "w") as confile:
-            json.dump(self.pars, confile, indent=4)
+    def read_calc_config(self, filename=None):
+        if filename is None:
+            filename = self.calc_pars["CONFIG_FILENAME"]
+        with open(filename, "r") as confile:
+            buff_dict = json.load(confile)
+            for _ in buff_dict.keys():
+                if _ in self.calc_pars:
+                    self.calc_pars[_] = buff_dict[_]
+                else:
+                    warn(f"Parameter {_} not recognised - skipping")
+
+    def write_head_config(self, filename=None):
+        if filename is None:
+            filename = self.head_pars["CONFIG_FILENAME"]
+        with open(filename, "w") as confile:
+            json.dump(self.head_pars, confile, indent=4)
+
+    def write_calc_config(self, filename=None):
+        if filename is None:
+            filename = self.calc_pars["CONFIG_FILENAME"]
+        with open(filename, "w") as confile:
+            json.dump(self.calc_pars, confile, indent=4)
+
+    def read_ffa_results(self, filename=None):
+        if filename is None:
+            filename = f"ffa_results_{self.head_pars['CONFIG_FILENAME'][:-5]}_" \
+                       f"{self.calc_pars['CONFIG_FILENAME'][:-5]}.txt"
+        self.images_table = ascii.read(filename, delimiter="\t",
+                                       format="commented_header", fill_values=[(ascii.masked, "nan")])
+
+    def write_ffa_results(self, filename=None):
+        if filename is None:
+            filename = f"ffa_results_{self.head_pars['CONFIG_FILENAME'][:-5]}_" \
+                       f"{self.calc_pars['CONFIG_FILENAME'][:-5]}.txt"
+        ascii.write(self.images_table, filename, overwrite=True, delimiter="\t",
+                    format="commented_header", fill_values=[(ascii.masked, "nan")])
 
 
 """
-read_app_results
-write_app_results
 
-result file name = f"[RESULT_NAME]_{config_file[:-5]}.txt"
 """
