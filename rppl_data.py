@@ -27,9 +27,9 @@ class RPPLData(_RPPLSubIOS, _RPPLSubFFA):
         self.images_table = None
 
         if head_config is not None:
-            self.read_head_config(head_config)
+            self.read_head_config(f"{head_config}.json")
         if calc_config is not None:
-            self.read_calc_config(calc_config)
+            self.read_calc_config(f"{calc_config}.json")
 
         for _, __ in kwargs.items():
             if _ in self.head_pars:

@@ -1,13 +1,10 @@
 from rppl_data import RPPLData
-from utils import create_empty_configs
 
-
-create_empty_configs("APM-1.2M.json", "config_calc.json")
-
+da_ob = RPPLData(head_config="APM-1.2M", calc_config="basic_calc")
+da_ob.fits_files_accounting()
+da_ob.write_ffa_results()
 
 """
-H:/STUDY TO/Астрономия/4_НИР/
-
 TODO:
 
 TODO BONUS:

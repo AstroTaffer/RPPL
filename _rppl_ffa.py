@@ -1,7 +1,6 @@
 from os import listdir, mkdir
 from os.path import isdir
 from shutil import copy2
-from datetime import datetime
 
 import numpy as np
 from astropy.table import Table
@@ -49,26 +48,25 @@ class _RPPLSubFFA:
                                          self.head_pars["EXPTIME"],
                                          self.head_pars["CCD-TEMP"]))
 
-        print(f"{datetime.now()}\nTotal of {len(dir_content)} images accounted:")
+        print(f"\nTotal of {len(dir_content)} images accounted:")
         print(self.images_table)
 
     def _fits_files_backup(self, files_list):
         bkp_path = self.calc_pars["IMAGES_DIRECTORY"] + "backup/"
         if not isdir(bkp_path):
-            mkdir("backup/")
+            mkdir(bkp_path)
 
         # FIXME: REMOVE TEMPO_COUNTER
         # FIXME: IF COPY2 IS TOO SLOW, CHOOSE ANOTHER METHOD
         # FIXME: WARN USER ABOUT LOSING METADATA
-        tmp_counter = 1
+        # Warning! Some metadata may be lost due to Python inbuilt file copying functions limitations.
+        bkp_counter = 0
         bkp_content = listdir(bkp_path)
         for _ in files_list:
             if _ not in bkp_content or self.calc_pars["FORCED_BACKUP"]:
                 copy2(self.calc_pars["IMAGES_DIRECTORY"] + _, bkp_path + _)
-                print(f"FIle #{tmp_counter} {_} copied")
-            else:
-                print(f"File #{tmp_counter} {_} already exists")
-            tmp_counter += 1
+                bkp_counter += 1
+        print(f"\nBackup procedured - {bkp_counter} new files created, {len(files_list) - bkp_counter} already existed")
 
 
 """

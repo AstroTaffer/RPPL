@@ -1,0 +1,11 @@
+{
+    "CONFIG_FILENAME": "APM-1.2M",
+    "FILTER": "FILTER",
+    "IMAGETYP": "IMAGETYP",
+    "EXPTIME": "EXPTIME",
+    "CCD-TEMP": "CCD-TEMP",
+    "OBJECT": "OBJECT",
+    "BIAS": "BIAS",
+    "DARK": "DARK",
+    "FLAT": "FLAT"
+}

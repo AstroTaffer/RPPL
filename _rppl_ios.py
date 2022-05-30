@@ -12,7 +12,7 @@ class _RPPLSubIOS:
 
     def read_head_config(self, filename=None):
         if filename is None:
-            filename = self.head_pars["CONFIG_FILENAME"]
+            filename = f"{self.head_pars['CONFIG_FILENAME']}.json"
         with open(filename, "r") as confile:
             buff_dict = json.load(confile)
             for _ in buff_dict.keys():
@@ -23,7 +23,7 @@ class _RPPLSubIOS:
 
     def read_calc_config(self, filename=None):
         if filename is None:
-            filename = self.calc_pars["CONFIG_FILENAME"]
+            filename = f"{self.calc_pars['CONFIG_FILENAME']}.json"
         with open(filename, "r") as confile:
             buff_dict = json.load(confile)
             for _ in buff_dict.keys():
@@ -34,27 +34,27 @@ class _RPPLSubIOS:
 
     def write_head_config(self, filename=None):
         if filename is None:
-            filename = self.head_pars["CONFIG_FILENAME"]
+            filename = f"{self.head_pars['CONFIG_FILENAME']}.json"
         with open(filename, "w") as confile:
             json.dump(self.head_pars, confile, indent=4)
 
     def write_calc_config(self, filename=None):
         if filename is None:
-            filename = self.calc_pars["CONFIG_FILENAME"]
+            filename = f"{self.calc_pars['CONFIG_FILENAME']}.json"
         with open(filename, "w") as confile:
             json.dump(self.calc_pars, confile, indent=4)
 
     def read_ffa_results(self, filename=None):
         if filename is None:
-            filename = f"ffa_results_{self.head_pars['CONFIG_FILENAME'][:-5]}_" \
-                       f"{self.calc_pars['CONFIG_FILENAME'][:-5]}.txt"
+            filename = f"ffa_results_{self.head_pars['CONFIG_FILENAME']}_" \
+                       f"{self.calc_pars['CONFIG_FILENAME']}.txt"
         self.images_table = ascii.read(filename, delimiter="\t",
                                        format="commented_header", fill_values=[(ascii.masked, "nan")])
 
     def write_ffa_results(self, filename=None):
         if filename is None:
-            filename = f"ffa_results_{self.head_pars['CONFIG_FILENAME'][:-5]}_" \
-                       f"{self.calc_pars['CONFIG_FILENAME'][:-5]}.txt"
+            filename = f"ffa_results_{self.head_pars['CONFIG_FILENAME']}_" \
+                       f"{self.calc_pars['CONFIG_FILENAME']}.txt"
         ascii.write(self.images_table, filename, overwrite=True, delimiter="\t",
                     format="commented_header", fill_values=[(ascii.masked, "nan")])
 

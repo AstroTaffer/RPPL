@@ -5,7 +5,7 @@ import astropy.io.fits as fits
 
 # FIXME: This function requires manual updating with every new parameter introduced. That's actually a bad solution
 # LAST UPDATE 30-05 09:50
-def create_empty_configs(head_filename="new_head_config.json", calc_filename="new_calc_config.json"):
+def create_empty_configs(head_filename="new_head_config", calc_filename="new_calc_config"):
     head_pars = {"CONFIG_FILENAME": head_filename,
                  "FILTER": None,
                  "IMAGETYP": None,
@@ -22,9 +22,9 @@ def create_empty_configs(head_filename="new_head_config.json", calc_filename="ne
                  "IMAGES_BACKUP": True,
                  "FORCED_BACKUP": False}
 
-    with open(head_filename, "w") as head_confile:
+    with open(f"{head_filename}.json", "w") as head_confile:
         json.dump(head_pars, head_confile, indent=4)
-    with open(calc_filename, "w") as calc_confile:
+    with open(f"{calc_filename}.json", "w") as calc_confile:
         json.dump(calc_pars, calc_confile, indent=4)
 
 
