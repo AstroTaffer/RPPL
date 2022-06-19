@@ -4,8 +4,13 @@
     "IMAGETYP": "IMAGETYP",
     "EXPTIME": "EXPTIME",
     "CCD-TEMP": "CCD-TEMP",
-    "OBJECT": "OBJECT",
-    "BIAS": "BIAS",
-    "DARK": "DARK",
-    "FLAT": "FLAT"
+    "NAXIS1": "NAXIS1",
+    "NAXIS2": "NAXIS2",
+    "DATE-OBS": "DATE-OBS",
+    "OBJECT": "Object",
+    "BIAS": "Bias",
+    "DARK": "Dark",
+    "FLAT": "Flat",
+    "SDARK": "SDark",
+    "SFLAT": "SFlat"
 }

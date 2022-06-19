@@ -2,10 +2,11 @@ from datetime import datetime
 from warnings import warn
 
 from _rppl_ios import _RPPLSubIOS
-from _rppl_ffa import _RPPLSubFFA
+from _rppl_aff import _RPPLSubFFA
+from _rppl_clb import _RPPLSubCLB
 
 
-class RPPLData(_RPPLSubIOS, _RPPLSubFFA):
+class RPPLData(_RPPLSubIOS, _RPPLSubFFA, _RPPLSubCLB):
     # noinspection PyMissingConstructor
     def __init__(self, head_config=None, calc_config=None, **kwargs):
         self.head_pars = {"CONFIG_FILENAME": head_config,
@@ -13,18 +14,26 @@ class RPPLData(_RPPLSubIOS, _RPPLSubFFA):
                           "IMAGETYP": None,
                           "EXPTIME": None,
                           "CCD-TEMP": None,
+                          "NAXIS1": None,
+                          "NAXIS2": None,
+                          "DATE-OBS": None,
 
                           "OBJECT": None,
                           "BIAS": None,
                           "DARK": None,
-                          "FLAT": None}
+                          "FLAT": None,
+                          "SDARK": None,
+                          "SFLAT": None}
 
         self.calc_pars = {"CONFIG_FILENAME": calc_config,
                           "IMAGES_DIRECTORY": None,
                           "IMAGES_BACKUP": True,
-                          "FORCED_BACKUP": False}
+                          "FORCED_BACKUP": False,
+                          "DELETE_NON-CALIBRATABLE": True,
+                          "DELTA_T": None}
 
         self.images_table = None
+        self.sdfimg_table = None
 
         if head_config is not None:
             self.read_head_config(f"{head_config}.json")
@@ -37,7 +46,7 @@ class RPPLData(_RPPLSubIOS, _RPPLSubFFA):
             elif _ in self.calc_pars:
                 self.calc_pars[_] = __
             else:
-                warn(f"Parameter {_} not recognised --- skipped")
+                warn(f"Parameter {_} not recognised - skipped")
 
         self.calc_pars["IMAGES_DIRECTORY"] = self.calc_pars["IMAGES_DIRECTORY"].replace("\\", "/")
         if self.calc_pars["IMAGES_DIRECTORY"][-1] != "/":
@@ -56,5 +65,5 @@ class RPPLData(_RPPLSubIOS, _RPPLSubFFA):
 
 
 """
-Вписать delta_T в параметры обработки
+
 """

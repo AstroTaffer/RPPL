@@ -6,9 +6,10 @@ from astropy.io import ascii
 
 class _RPPLSubIOS:
     def __init__(self):
-        self.head_pars = {}
-        self.calc_pars = {}
+        self.head_pars = None
+        self.calc_pars = None
         self.images_table = None
+        self.sdfimg_table = None
 
     def read_head_config(self, filename=None):
         if filename is None:
@@ -19,7 +20,7 @@ class _RPPLSubIOS:
                 if _ in self.head_pars:
                     self.head_pars[_] = buff_dict[_]
                 else:
-                    warn(f"Parameter {_} not recognised - skipping")
+                    warn(f"Parameter {_} not recognised - skipped")
 
     def read_calc_config(self, filename=None):
         if filename is None:
@@ -30,7 +31,7 @@ class _RPPLSubIOS:
                 if _ in self.calc_pars:
                     self.calc_pars[_] = buff_dict[_]
                 else:
-                    warn(f"Parameter {_} not recognised - skipping")
+                    warn(f"Parameter {_} not recognised - skipped")
 
     def write_head_config(self, filename=None):
         if filename is None:
@@ -44,21 +45,35 @@ class _RPPLSubIOS:
         with open(filename, "w") as confile:
             json.dump(self.calc_pars, confile, indent=4)
 
-    def read_ffa_results(self, filename=None):
+    def read_images_table(self, filename=None):
         if filename is None:
-            filename = f"ffa_results_{self.head_pars['CONFIG_FILENAME']}_" \
+            filename = f"images_table_{self.head_pars['CONFIG_FILENAME']}_" \
                        f"{self.calc_pars['CONFIG_FILENAME']}.txt"
         self.images_table = ascii.read(filename, delimiter="\t",
                                        format="commented_header", fill_values=[(ascii.masked, "nan")])
 
-    def write_ffa_results(self, filename=None):
+    def write_images_table(self, filename=None):
         if filename is None:
-            filename = f"ffa_results_{self.head_pars['CONFIG_FILENAME']}_" \
+            filename = f"images_table_{self.head_pars['CONFIG_FILENAME']}_" \
                        f"{self.calc_pars['CONFIG_FILENAME']}.txt"
         ascii.write(self.images_table, filename, overwrite=True, delimiter="\t",
                     format="commented_header", fill_values=[(ascii.masked, "nan")])
 
+    def read_sdfimg_table(self, filename=None):
+        if filename is None:
+            filename = f"sdfimg_table_{self.head_pars['CONFIG_FILENAME']}_" \
+                       f"{self.calc_pars['CONFIG_FILENAME']}.txt"
+        self.sdfimg_table = ascii.read(filename, delimiter="\t",
+                                       format="commented_header", fill_values=[(ascii.masked, "nan")])
+
+    def write_sdfimg_table(self, filename=None):
+        if filename is None:
+            filename = f"sdfimg_table_{self.head_pars['CONFIG_FILENAME']}_" \
+                       f"{self.calc_pars['CONFIG_FILENAME']}.txt"
+        ascii.write(self.sdfimg_table, filename, overwrite=True, delimiter="\t",
+                    format="commented_header", fill_values=[(ascii.masked, "nan")])
+
 
 """
-
+Стоит внедрить чтение и запись с помощью методов для таблиц
 """

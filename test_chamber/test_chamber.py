@@ -1,10 +1,10 @@
-from os import mkdir
+from utils import read_fits_file
 
-mkdir("backup/")
-with open("backup/testfile.txt", "w") as testfile:
-    testfile.write("test_string")
+header1, data1 = read_fits_file("Image 1.fits")
+header2, data2 = read_fits_file("Image 2.fits")
 
-
+print(header1)
+print(header2)
 """
 
 """
