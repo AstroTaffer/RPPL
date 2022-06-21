@@ -22,6 +22,7 @@ class _RPPLSubCLB:
         imgs_type = []
         imgs_exptime = []
         imgs_ccdtemp = []
+        imgs_sigma = []
 
         filters = unique(self.images_table, self.head_pars["FILTER"])[self.head_pars["FILTER"]]
         for _ in filters:
@@ -75,15 +76,17 @@ class _RPPLSubCLB:
                 imgs_type.append(self.head_pars["SDARK"])
                 imgs_exptime.append(__)
                 imgs_ccdtemp.append(mean_ccd_temp)
+                imgs_sigma.append(np.std(sdark_image))
         
-        self.sdfimg_table = Table([imgs_filename, imgs_filter, imgs_type, imgs_exptime, imgs_ccdtemp],
+        self.sdfimg_table = Table([imgs_filename, imgs_filter, imgs_type, imgs_exptime, imgs_ccdtemp, imgs_sigma],
                                   names=("FILENAME",
                                          self.head_pars["FILTER"],
                                          self.head_pars["IMAGETYP"],
                                          self.head_pars["EXPTIME"],
-                                         self.head_pars["CCD-TEMP"]))
+                                         self.head_pars["CCD-TEMP"],
+                                         "SIGMA"))
         self.sdfimg_table.add_column(np.arange(1, len(self.sdfimg_table) + 1), index=0, name="ID")
-        print(f"\nTotal of {len(self.sdfimg_table)} super-dark images created:")
+        print(f"\nTotal of {len(self.sdfimg_table)} superdark images created:")
         print(self.sdfimg_table)
 
     def make_sflats(self):
@@ -92,6 +95,7 @@ class _RPPLSubCLB:
         imgs_type = []
         imgs_exptime = []
         imgs_ccdtemp = []
+        imgs_sigma = []
 
         filters = unique(self.images_table, self.head_pars["FILTER"])[self.head_pars["FILTER"]]
         for _ in filters:
@@ -127,7 +131,7 @@ class _RPPLSubCLB:
                                                          (abs(self.sdfimg_table[self.head_pars["CCD-TEMP"]] -
                                                               mean_ccd_temp) <= self.calc_pars["DELTA_T"]))]
                 if len(sdark_table) == 0:
-                    warn(f"No suitable super-dark image with filter {_}, exptime {__} and"
+                    warn(f"No suitable superdark image with filter {_}, exptime {__} and"
                          f"temperature near {mean_ccd_temp} - skipped")
                     continue
 
@@ -141,12 +145,24 @@ class _RPPLSubCLB:
                                                       sel_table["FILENAME"][___])[1]
                     flat_images[___] -= sdark_data
                     flat_images[___] /= np.mean(flat_images[___])
-                sflat_image = np.nanmean(sigma_clip(flat_images, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
+
+                if self.calc_pars["AVERAGING_FUNC"] == "SIGMA-CLIP":
+                    sflat_image = np.nanmean(sigma_clip(flat_images, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
+                elif self.calc_pars["AVERAGING_FUNC"] == "MEAN":
+                    sflat_image = np.mean(flat_images, axis=0)
+                elif self.calc_pars["AVERAGING_FUNC"] == "MEDIAN":
+                    sflat_image = np.median(flat_images, axis=0)
+                else:
+                    warn("Unknown averaging function - skipped")
+                    exit()
+
                 buff_hdr[self.head_pars["DATE-OBS"]] = ""
                 buff_hdr[self.head_pars["CCD-TEMP"]] = (mean_ccd_temp, "mean temperature of sum of expositions")
                 buff_hdr[self.head_pars["IMAGETYP"]] = self.head_pars["SFLAT"]
 
                 sflat_filename = f"SFLAT_{_}_{__}.fits"
+                # noinspection PyUnboundLocalVariable
+                # FIXME: Bad code - raise exception instead
                 buff_hdu = fits.PrimaryHDU(sflat_image, buff_hdr)
                 buff_hdul = fits.HDUList([buff_hdu])
                 buff_hdul.writeto(self.calc_pars["IMAGES_DIRECTORY"] + sflat_filename, overwrite=True)
@@ -156,18 +172,20 @@ class _RPPLSubCLB:
                 imgs_type.append(self.head_pars["SFLAT"])
                 imgs_exptime.append(__)
                 imgs_ccdtemp.append(mean_ccd_temp)
+                imgs_sigma.append(np.std(sflat_image))
 
-        sflat_table = Table([imgs_filename, imgs_filter, imgs_type, imgs_exptime, imgs_ccdtemp],
+        sflat_table = Table([imgs_filename, imgs_filter, imgs_type, imgs_exptime, imgs_ccdtemp, imgs_sigma],
                             names=("FILENAME",
-                            self.head_pars["FILTER"],
-                            self.head_pars["IMAGETYP"],
-                            self.head_pars["EXPTIME"],
-                            self.head_pars["CCD-TEMP"]))
-        sflat_table.add_column(np.arange(len(self.sdfimg_table), len(self.sdfimg_table) + len(sflat_table)),
+                                   self.head_pars["FILTER"],
+                                   self.head_pars["IMAGETYP"],
+                                   self.head_pars["EXPTIME"],
+                                   self.head_pars["CCD-TEMP"],
+                                   "SIGMA"))
+        sflat_table.add_column(np.arange(len(self.sdfimg_table) + 1, len(self.sdfimg_table) + len(sflat_table) + 1),
                                index=0, name="ID")
         self.sdfimg_table = vstack([self.sdfimg_table, sflat_table])
         # FIXME: Somehow handle empty sflat_table
-        print(f"\nTotal of {len(sflat_table)} super-flat images created:")
+        print(f"\nTotal of {len(sflat_table)} superflat images created:")
         print(sflat_table)
 
     def apply_calibration(self):
@@ -192,14 +210,14 @@ class _RPPLSubCLB:
                                                           header[self.head_pars["CCD-TEMP"]]) <=
                                                       self.calc_pars["DELTA_T"]))]
             if len(sdark_table) == 0:
-                warn(f"No suitable super-dark image for image {self.images_table['FILENAME'][_]} - excluded")
+                warn(f"No suitable superdark image for image {self.images_table['FILENAME'][_]} - excluded")
                 self.images_table.remove_row(_)
                 if self.calc_pars["DELETE_NON-CALIBRATABLE"]:
                     remove(self.calc_pars["IMAGES_DIRECTORY"] + self.images_table["FILENAME"][_])
                     print("Image removed")
                 continue
             elif len(sflat_table) == 0:
-                warn(f"No suitable super-flat image for image {self.images_table['FILENAME'][_]} - excluded")
+                warn(f"No suitable superflat image for image {self.images_table['FILENAME'][_]} - excluded")
                 self.images_table.remove_row(_)
                 if self.calc_pars["DELETE_NON-CALIBRATABLE"]:
                     remove(self.calc_pars["IMAGES_DIRECTORY"] + self.images_table["FILENAME"][_])
@@ -231,7 +249,8 @@ class _RPPLSubCLB:
 
 """
 Даркам не важен фильтр, флетам не важна экспозиция -> возможен выбор при калибровке
-Этот выбор лучше сделать по наибольшему числу кадров, задействованных в создании супер-снимков.
+Возможно, этот выбор лучше сделать по наибольшему числу кадров, задействованных в создании супер-снимков.
+Можно упростить перебор по сочетанию фильтр/экспозиция
 
 Когда заработает возврат строк по астропаевскому мультииндексу, его стоит внедрить
 """

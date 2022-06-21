@@ -27,7 +27,6 @@ class _RPPLSubFFA:
         if self.calc_pars["IMAGES_BACKUP"]:
             self._backup_fits_files(dir_content)
 
-        imgs_id = np.arange(1, len(dir_content) + 1)
         imgs_filename = []
         imgs_filter = []
         imgs_type = []
@@ -35,6 +34,12 @@ class _RPPLSubFFA:
         imgs_ccdtemp = []
         for _ in dir_content:
             header = read_fits_file(self.calc_pars["IMAGES_DIRECTORY"] + _)[0]
+            if not(header[self.head_pars["IMAGETYP"]] in [self.head_pars["BIAS"],
+                                                          self.head_pars["DARK"],
+                                                          self.head_pars["FLAT"],
+                                                          self.head_pars["OBJECT"]]):
+                # must be SDark or SFlat - none of them are allowed here
+                continue
             imgs_filename.append(_)
             imgs_filter.append(header[self.head_pars["FILTER"]])
             # FIXME: Bias and Dark files sometimes have no 'FILTER' field
@@ -42,6 +47,7 @@ class _RPPLSubFFA:
             imgs_type.append(header[self.head_pars["IMAGETYP"]])
             imgs_exptime.append(header[self.head_pars["EXPTIME"]])
             imgs_ccdtemp.append(header[self.head_pars["CCD-TEMP"]])
+        imgs_id = np.arange(1, len(imgs_filename) + 1)
         self.images_table = Table([imgs_id, imgs_filename, imgs_filter, imgs_type, imgs_exptime, imgs_ccdtemp],
                                   names=("ID", "FILENAME",
                                          self.head_pars["FILTER"],

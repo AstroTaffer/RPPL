@@ -4,5 +4,6 @@
     "IMAGES_BACKUP": true,
     "FORCED_BACKUP": false,
     "DELETE_NON-CALIBRATABLE": true,
-    "DELTA_T": 1
+    "DELTA_T": 1,
+    "AVERAGING_FUNC": "SIGMA-CLIP"
 }

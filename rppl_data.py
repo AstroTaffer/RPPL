@@ -30,7 +30,8 @@ class RPPLData(_RPPLSubIOS, _RPPLSubFFA, _RPPLSubCLB):
                           "IMAGES_BACKUP": True,
                           "FORCED_BACKUP": False,
                           "DELETE_NON-CALIBRATABLE": True,
-                          "DELTA_T": None}
+                          "DELTA_T": None,
+                          "AVERAGING_FUNC": None}
 
         self.images_table = None
         self.sdfimg_table = None
