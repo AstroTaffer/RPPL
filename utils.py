@@ -30,3 +30,20 @@ def restore_default_config():
         "CALIBRATED_BITPIX": 16}
     with open(f"default_config.json", "w") as confile:
         json.dump(settings, confile, indent=4)
+
+
+# Was made for quick and stupid fix --- please, do not use
+def copy_header(ref_file, bad_file, new_dir):
+    check_out_directory(new_dir)
+    if not (ref_file.count(".fits") or ref_file.count(".fit") or ref_file.count(".fts")):
+        return
+    if not (bad_file.count(".fits") or bad_file.count(".fit") or bad_file.count(".fts")):
+        return
+    ref_head = read_fits_file(ref_file)[0]
+    bad_head, bad_data = read_fits_file(bad_file)
+    if ref_head["DATE-OBS"] != bad_head["DATE-OBS"]:
+        return
+    new_hdu = fits.PrimaryHDU(bad_data, ref_head)
+    new_hdul = fits.HDUList([new_hdu])
+    new_hdul.writeto(new_dir + bad_file[bad_file.rfind("\\")+1:], overwrite=True)
+    print(f"{bad_file} fixed")

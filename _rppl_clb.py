@@ -95,7 +95,7 @@ class _Calibrator:
         for _ in filters:
             sel_table_1 = self.images_table[np.where((self.images_table["FILTER"] == _) &
                                                      ((self.images_table["IMAGETYP"] == "Flat") |
-                                                      (self.images_table["IMAGETYP"] == "Flat Frame")))]
+                                                      (self.images_table["IMAGETYP"] == "Flat Field")))]
             if len(sel_table_1) == 0:
                 warn(f"No flat images with filter {_} - skipped")
                 continue
@@ -194,10 +194,7 @@ class _Calibrator:
                     case "DO_FLAT":
                         mflat_table = self.images_table[np.where((self.images_table["IMAGETYP"] == "Master Flat") &
                                                                  (self.images_table["FILTER"] ==
-                                                                  self.images_table["FILTER"][_]) &
-                                                                 (abs(self.images_table["CCD-TEMP"] -
-                                                                      self.images_table["CCD-TEMP"][_]) <=
-                                                                  self.settings["EPSILON_TEMP"]))]
+                                                                  self.images_table["FILTER"][_]))]
                         if len(mflat_table) == 0:
                             warn(f"No fitting master flat image for {self.images_table['FILEPATH'][_]} - skipped")
                             continue
@@ -219,10 +216,7 @@ class _Calibrator:
                             continue
                         mflat_table = self.images_table[np.where((self.images_table["IMAGETYP"] == "Master Flat") &
                                                                  (self.images_table["FILTER"] ==
-                                                                  self.images_table["FILTER"][_]) &
-                                                                 (abs(self.images_table["CCD-TEMP"] -
-                                                                      self.images_table["CCD-TEMP"][_]) <=
-                                                                  self.settings["EPSILON_TEMP"]))]
+                                                                  self.images_table["FILTER"][_]))]
                         if len(mflat_table) == 0:
                             warn(f"No fitting master flat image for {self.images_table['FILEPATH'][_]} - skipped")
                             continue
