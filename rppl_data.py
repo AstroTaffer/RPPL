@@ -15,7 +15,6 @@ class RPPLData(_IOHandler, _Lister, _Calibrator):
             "OUT_DIR": None,
             "EPSILON_TEMP": None,  # [C]
             "MIN_IMAGES_FOR_MASTER": None,
-            "MASTER_BITPIX": None,  # 16 | -64
             "CALIBRATED_BITPIX": None}  # 16 | -64
 
         # Get config settings

@@ -55,23 +55,13 @@ class _Calibrator:
                         dark_images[____] = read_fits_file(sel_table_4["FILEPATH"][____])[1]
 
                     mdark_data = np.nanmean(sigma_clip(dark_images, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
+                    buff_hdr['BITPIX'] = -64
                     buff_hdr["DATE-OBS"] = ""
                     buff_hdr["ALPHA"] = ""
                     buff_hdr["DELTA"] = ""
                     buff_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions [C]")
                     buff_hdr["IMAGETYP"] = "Master Dark"
                     mdark_filename = f"MasterDark_B={_}_F={__}_E={___:.0f}_T={mean_ccd_temp:.0f}.fits"
-
-                    match self.settings["MASTER_BITPIX"]:
-                        case 16:
-                            # uint16
-                            mdark_data = np.round(mdark_data).astype(np.uint16)
-                            buff_hdr['BITPIX'] = 16
-                        case -64:
-                            # float32
-                            buff_hdr['BITPIX'] = -64
-                        case _:
-                            raise Exception(f"Unknown BITPIX for Master Dark: {self.settings['MASTER_BITPIX']}")
 
                     mdark_hdu = fits.PrimaryHDU(mdark_data, buff_hdr)
                     mdark_hdul = fits.HDUList([mdark_hdu])
@@ -140,28 +130,18 @@ class _Calibrator:
                     flat_images = np.zeros((len(sel_table_4), buff_hdr["NAXIS1"], buff_hdr["NAXIS2"]),
                                            dtype=np.float32)
                     for ____ in range(len(sel_table_4)):
-                        flat_images[____] = read_fits_file(sel_table_4["FILEPATH"][___])[1]
+                        flat_images[____] = read_fits_file(sel_table_4["FILEPATH"][____])[1]
                         flat_images[____] -= mdark_data
-                        flat_images[____] /= np.mean(flat_images[___])
+                        flat_images[____] /= np.mean(flat_images[____])
 
                     mflat_data = np.nanmean(sigma_clip(flat_images, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
+                    buff_hdr['BITPIX'] = -64
                     buff_hdr["DATE-OBS"] = ""
                     buff_hdr["ALPHA"] = ""
                     buff_hdr["DELTA"] = ""
                     buff_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions")
                     buff_hdr["IMAGETYP"] = "Master Flat"
-                    mflat_filename = f"MasterFlat_B={_}_F={__}_E={___:.0f}_T={mean_ccd_temp}.fits"
-
-                    match self.settings["MASTER_BITPIX"]:
-                        case 16:
-                            # uint16
-                            mflat_data = np.round(mflat_data).astype(np.uint16)
-                            buff_hdr['BITPIX'] = 16
-                        case -64:
-                            # float32
-                            buff_hdr['BITPIX'] = -64
-                        case _:
-                            raise Exception(f"Unknown BITPIX for Master Flat: {self.settings['MASTER_BITPIX']}")
+                    mflat_filename = f"MasterFlat_B={_}_F={__}.fits"
 
                     buff_hdu = fits.PrimaryHDU(mflat_data, buff_hdr)
                     buff_hdul = fits.HDUList([buff_hdu])
