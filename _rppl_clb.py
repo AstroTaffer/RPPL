@@ -16,152 +16,167 @@ class _Calibrator:
     def make_master_dark(self):
         check_out_directory(self.settings["OUT_DIR"])
 
-        imgs_filter = []
         imgs_type = []
+        imgs_binning = []
+        imgs_filter = []
         imgs_exptime = []
         imgs_ccdtemp = []
         imgs_filepath = []
 
-        filters = unique(self.images_table, "FILTER")["FILTER"]
-        for _ in filters:
-            sel_table_1 = self.images_table[np.where((self.images_table["FILTER"] == _) &
-                                                     ((self.images_table["IMAGETYP"] == "Dark") |
-                                                      (self.images_table["IMAGETYP"] == "Dark Frame")))]
-            if len(sel_table_1) == 0:
-                warn(f"No dark images with filter {_} - skipped")
-                continue
-            exptimes = unique(sel_table_1, "EXPTIME")["EXPTIME"]
-            for __ in exptimes:
-                sel_table_2 = sel_table_1[np.where(sel_table_1["EXPTIME"] == __)]
-                mean_ccd_temp = np.round(np.mean(sel_table_2["CCD-TEMP"]), 3)
-                sel_table_3 = sel_table_2[np.where(abs(sel_table_2["CCD-TEMP"] - mean_ccd_temp) <=
-                                                   self.settings["EPSILON_TEMP"])]
-                if len(sel_table_3) < self.settings["MIN_IMAGES_FOR_MASTER"]:
-                    warn(f"Less than {self.settings['MIN_IMAGES_FOR_MASTER']} dark images with filter {_}, "
-                         f"exptime {__} and temperature near {mean_ccd_temp} - skipped")
-                    continue
-                else:
-                    print(f"Found {len(sel_table_3)} dark images with filter {_}, exptime {__} and "
-                          f"mean CCD temperature {mean_ccd_temp}")
+        sel_table_0 = self.images_table[np.where(((self.images_table["IMAGETYP"] == "Dark") |
+                                                  (self.images_table["IMAGETYP"] == "Dark Frame")))]
+        if len(sel_table_0) == 0:
+            print("Can't create master dark frames - No dark images found\n")
+            return
 
-                buff_hdr = read_fits_file(sel_table_3["FILEPATH"][0])[0]
-                dark_images = np.zeros((len(sel_table_3), buff_hdr["NAXIS1"], buff_hdr["NAXIS2"]), dtype=np.float32)
-                for ___ in range(len(sel_table_3)):
-                    dark_images[___] = read_fits_file(sel_table_3["FILEPATH"][___])[1]
+        bin_factors = unique(sel_table_0, "BINNING")["BINNING"]
+        for _ in bin_factors:
+            sel_table_1 = sel_table_0[np.where(sel_table_0["BINNING"] == _)]
+            filters = unique(sel_table_1, "FILTER")["FILTER"]
+            for __ in filters:
+                sel_table_2 = sel_table_1[np.where(sel_table_1["FILTER"] == __)]
+                exptimes = unique(sel_table_2, "EXPTIME")["EXPTIME"]
+                for ___ in exptimes:
+                    sel_table_3 = sel_table_2[np.where(sel_table_2["EXPTIME"] == ___)]
+                    mean_ccd_temp = np.round(np.mean(sel_table_3["CCD-TEMP"]), 3)
+                    sel_table_4 = sel_table_3[np.where(abs(sel_table_3["CCD-TEMP"] - mean_ccd_temp) <=
+                                                       self.settings["EPSILON_TEMP"])]
+                    if len(sel_table_4) < self.settings["MIN_IMAGES_FOR_MASTER"]:
+                        warn(f"Less than {self.settings['MIN_IMAGES_FOR_MASTER']} dark images with BINNING {_}, "
+                             f"FILTER {__}, EXPTIME {___} and CCD-TEMP near {mean_ccd_temp} - skipped")
+                        continue
+                    print(f"Found {len(sel_table_4)} dark images with BINNING {_}, "
+                          f"FILTER {__}, EXPTIME {___} and CCD-TEMP near {mean_ccd_temp}")
 
-                mdark_data = np.nanmean(sigma_clip(dark_images, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
-                buff_hdr["DATE-OBS"] = ""
-                buff_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions [C]")
-                buff_hdr["IMAGETYP"] = "Master Dark"
-                mdark_filename = f"MasterDark_{_}_{__:.0f}.fits"
+                    buff_hdr = read_fits_file(sel_table_4["FILEPATH"][0])[0]
+                    dark_images = np.zeros((len(sel_table_4), buff_hdr["NAXIS1"], buff_hdr["NAXIS2"]),
+                                           dtype=np.float32)
+                    for ____ in range(len(sel_table_4)):
+                        dark_images[____] = read_fits_file(sel_table_4["FILEPATH"][____])[1]
 
-                match self.settings["MASTER_BITPIX"]:
-                    case 16:
-                        # uint16
-                        mdark_data = np.round(mdark_data).astype(np.uint16)
-                        buff_hdr['BITPIX'] = 16
-                    case -64:
-                        # float32
-                        buff_hdr['BITPIX'] = -64
-                    case _:
-                        raise Exception(f"Unknown BITPIX value for Master Dark: {self.settings['MASTER_BITPIX']}")
+                    mdark_data = np.nanmean(sigma_clip(dark_images, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
+                    buff_hdr["DATE-OBS"] = ""
+                    buff_hdr["ALPHA"] = ""
+                    buff_hdr["DELTA"] = ""
+                    buff_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions [C]")
+                    buff_hdr["IMAGETYP"] = "Master Dark"
+                    mdark_filename = f"MasterDark_B={_}_F={__}_E={___:.0f}_T={mean_ccd_temp:.0f}.fits"
 
-                mdark_hdu = fits.PrimaryHDU(mdark_data, buff_hdr)
-                mdark_hdul = fits.HDUList([mdark_hdu])
-                mdark_hdul.writeto(self.settings["OUT_DIR"] + mdark_filename, overwrite=True)
+                    match self.settings["MASTER_BITPIX"]:
+                        case 16:
+                            # uint16
+                            mdark_data = np.round(mdark_data).astype(np.uint16)
+                            buff_hdr['BITPIX'] = 16
+                        case -64:
+                            # float32
+                            buff_hdr['BITPIX'] = -64
+                        case _:
+                            raise Exception(f"Unknown BITPIX for Master Dark: {self.settings['MASTER_BITPIX']}")
 
-                imgs_filepath.append(self.settings["OUT_DIR"] + mdark_filename)
-                imgs_filter.append(_)
-                imgs_type.append("Master Dark")
-                imgs_exptime.append(__)
-                imgs_ccdtemp.append(mean_ccd_temp)
+                    mdark_hdu = fits.PrimaryHDU(mdark_data, buff_hdr)
+                    mdark_hdul = fits.HDUList([mdark_hdu])
+                    mdark_hdul.writeto(self.settings["OUT_DIR"] + mdark_filename, overwrite=True)
+
+                    imgs_type.append("Master Dark")
+                    imgs_binning.append(_)
+                    imgs_filter.append(__)
+                    imgs_exptime.append(___)
+                    imgs_ccdtemp.append(mean_ccd_temp)
+                    imgs_filepath.append(self.settings["OUT_DIR"] + mdark_filename)
 
         if len(imgs_filepath) > 0:
-            mdark_table = Table([imgs_filter, imgs_type, imgs_exptime, imgs_ccdtemp, imgs_filepath],
-                                names=("FILTER", "IMAGETYP", "EXPTIME", "CCD-TEMP", "FILEPATH"))
+            mdark_table = Table([imgs_type, imgs_binning, imgs_filter, imgs_exptime, imgs_ccdtemp, imgs_filepath],
+                                names=("IMAGETYP", "BINNING", "FILTER", "EXPTIME", "CCD-TEMP", "FILEPATH"))
             self.images_table = vstack([self.images_table, mdark_table])
         print(f"Master darks created: {len(imgs_filepath)} total\n")
 
     def make_master_flat(self):
         check_out_directory(self.settings["OUT_DIR"])
 
-        imgs_filter = []
         imgs_type = []
+        imgs_binning = []
+        imgs_filter = []
         imgs_exptime = []
         imgs_ccdtemp = []
         imgs_filepath = []
 
-        filters = unique(self.images_table, "FILTER")["FILTER"]
-        for _ in filters:
-            sel_table_1 = self.images_table[np.where((self.images_table["FILTER"] == _) &
-                                                     ((self.images_table["IMAGETYP"] == "Flat") |
-                                                      (self.images_table["IMAGETYP"] == "Flat Field")))]
-            if len(sel_table_1) == 0:
-                warn(f"No flat images with filter {_} - skipped")
-                continue
-            exptimes = unique(sel_table_1, "EXPTIME")["EXPTIME"]
-            for __ in exptimes:
-                sel_table_2 = sel_table_1[np.where(sel_table_1["EXPTIME"] == __)]
-                mean_ccd_temp = np.round(np.mean(sel_table_2["CCD-TEMP"]), 3)
-                sel_table_3 = sel_table_2[np.where(abs(sel_table_2["CCD-TEMP"] - mean_ccd_temp) <=
-                                                   self.settings["EPSILON_TEMP"])]
-                if len(sel_table_3) < self.settings["MIN_IMAGES_FOR_MASTER"]:
-                    warn(f"Less than {self.settings['MIN_IMAGES_FOR_MASTER']} flat images with filter {_}, "
-                         f"exptime {__} and temperature near {mean_ccd_temp} - skipped")
-                    continue
-                else:
-                    print(f"Found {len(sel_table_3)} flat images with filter {_}, exptime {__} and "
-                          f"mean CCD temperature {mean_ccd_temp}")
+        sel_table_0 = self.images_table[np.where(((self.images_table["IMAGETYP"] == "Flat") |
+                                                  (self.images_table["IMAGETYP"] == "Flat Field")))]
+        if len(sel_table_0) == 0:
+            print("Can't create master flat frames - No flat images found\n")
+            return
 
-                mdark_table = self.images_table[np.where((self.images_table["IMAGETYP"] == "Master Dark") &
-                                                         (self.images_table["EXPTIME"] == __) &
-                                                         (abs(self.images_table["CCD-TEMP"] - mean_ccd_temp) <=
-                                                          self.settings["EPSILON_TEMP"]))]
-                if len(mdark_table) == 0:
-                    warn(f"No suitable master dark image with filter {_}, exptime {__} and"
-                         f"temperature near {mean_ccd_temp} - skipped")
-                    continue
+        bin_factors = unique(sel_table_0, "BINNING")["BINNING"]
+        for _ in bin_factors:
+            sel_table_1 = sel_table_0[np.where(sel_table_0["BINNING"] == _)]
+            filters = unique(sel_table_1, "FILTER")["FILTER"]
+            for __ in filters:
+                sel_table_2 = sel_table_1[np.where(sel_table_1["FILTER"] == __)]
+                exptimes = unique(sel_table_2, "EXPTIME")["EXPTIME"]
+                for ___ in exptimes:
+                    sel_table_3 = sel_table_2[np.where(sel_table_2["EXPTIME"] == ___)]
+                    mean_ccd_temp = np.round(np.mean(sel_table_3["CCD-TEMP"]), 3)
+                    sel_table_4 = sel_table_3[np.where(abs(sel_table_3["CCD-TEMP"] - mean_ccd_temp) <=
+                                                       self.settings["EPSILON_TEMP"])]
+                    if len(sel_table_4) < self.settings["MIN_IMAGES_FOR_MASTER"]:
+                        warn(f"Less than {self.settings['MIN_IMAGES_FOR_MASTER']} flat images with BINNING {_}, "
+                             f"FILTER {__}, EXPTIME {___} and CCD-TEMP near {mean_ccd_temp} - skipped")
+                        continue
+                    print(f"Found {len(sel_table_4)} flat images with BINNING {_}, "
+                          f"FILTER {__}, EXPTIME {___} and CCD-TEMP near {mean_ccd_temp}")
+                    mdark_table = self.images_table[np.where((self.images_table["IMAGETYP"] == "Master Dark") &
+                                                             (self.images_table["BINNING"] == _) &
+                                                             (self.images_table["FILTER"] == __) &
+                                                             (self.images_table["EXPTIME"] == ___) &
+                                                             (abs(self.images_table["CCD-TEMP"] - mean_ccd_temp) <=
+                                                              self.settings["EPSILON_TEMP"]))]
+                    if len(mdark_table) == 0:
+                        warn(f"No master dark images with BINNING {_}, FILTER {__}, EXPTIME {___} and"
+                             f"CCD-TEMP near {mean_ccd_temp} - skipped")
+                        continue
 
-                mdark_data = read_fits_file(mdark_table["FILEPATH"][0])[1]
-                buff_hdr = read_fits_file(sel_table_3["FILEPATH"][0])[0]
-                flat_images = np.zeros((len(sel_table_3), buff_hdr["NAXIS1"], buff_hdr["NAXIS2"]), dtype=np.float32)
-                for ___ in range(len(sel_table_3)):
-                    flat_images[___] = read_fits_file(sel_table_3["FILEPATH"][___])[1]
-                    flat_images[___] -= mdark_data
-                    flat_images[___] /= np.mean(flat_images[___])
+                    mdark_data = read_fits_file(mdark_table["FILEPATH"][0])[1]
+                    buff_hdr = read_fits_file(sel_table_4["FILEPATH"][0])[0]
+                    flat_images = np.zeros((len(sel_table_4), buff_hdr["NAXIS1"], buff_hdr["NAXIS2"]),
+                                           dtype=np.float32)
+                    for ____ in range(len(sel_table_4)):
+                        flat_images[____] = read_fits_file(sel_table_4["FILEPATH"][___])[1]
+                        flat_images[____] -= mdark_data
+                        flat_images[____] /= np.mean(flat_images[___])
 
-                mflat_data = np.nanmean(sigma_clip(flat_images, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
+                    mflat_data = np.nanmean(sigma_clip(flat_images, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
+                    buff_hdr["DATE-OBS"] = ""
+                    buff_hdr["ALPHA"] = ""
+                    buff_hdr["DELTA"] = ""
+                    buff_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions")
+                    buff_hdr["IMAGETYP"] = "Master Flat"
+                    mflat_filename = f"MasterFlat_B={_}_F={__}_E={___:.0f}_T={mean_ccd_temp}.fits"
 
-                buff_hdr["DATE-OBS"] = ""
-                buff_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions")
-                buff_hdr["IMAGETYP"] = "Master Flat"
+                    match self.settings["MASTER_BITPIX"]:
+                        case 16:
+                            # uint16
+                            mflat_data = np.round(mflat_data).astype(np.uint16)
+                            buff_hdr['BITPIX'] = 16
+                        case -64:
+                            # float32
+                            buff_hdr['BITPIX'] = -64
+                        case _:
+                            raise Exception(f"Unknown BITPIX for Master Flat: {self.settings['MASTER_BITPIX']}")
 
-                mflat_filename = f"MasterFlat_{_}_{__:.0f}.fits"
+                    buff_hdu = fits.PrimaryHDU(mflat_data, buff_hdr)
+                    buff_hdul = fits.HDUList([buff_hdu])
+                    buff_hdul.writeto(self.settings["OUT_DIR"] + mflat_filename, overwrite=True)
 
-                match self.settings["MASTER_BITPIX"]:
-                    case 16:
-                        # uint16
-                        mflat_data = np.round(mflat_data).astype(np.uint16)
-                        buff_hdr['BITPIX'] = 16
-                    case -64:
-                        # float32
-                        buff_hdr['BITPIX'] = -64
-                    case _:
-                        raise Exception(f"Unknown BITPIX value for Master Flat: {self.settings['MASTER_BITPIX']}")
-
-                buff_hdu = fits.PrimaryHDU(mflat_data, buff_hdr)
-                buff_hdul = fits.HDUList([buff_hdu])
-                buff_hdul.writeto(self.settings["OUT_DIR"] + mflat_filename, overwrite=True)
-
-                imgs_filepath.append(self.settings["OUT_DIR"] + mflat_filename)
-                imgs_filter.append(_)
-                imgs_type.append("Master Flat")
-                imgs_exptime.append(__)
-                imgs_ccdtemp.append(mean_ccd_temp)
+                    imgs_type.append("Master Flat")
+                    imgs_binning.append(_)
+                    imgs_filter.append(__)
+                    imgs_exptime.append(___)
+                    imgs_ccdtemp.append(mean_ccd_temp)
+                    imgs_filepath.append(self.settings["OUT_DIR"] + mflat_filename)
 
         if len(imgs_filepath) > 0:
-            mflat_table = Table([imgs_filter, imgs_type, imgs_exptime, imgs_ccdtemp, imgs_filepath],
-                                names=("FILTER", "IMAGETYP", "EXPTIME", "CCD-TEMP", "FILEPATH"))
+            mflat_table = Table([imgs_type, imgs_binning, imgs_filter, imgs_exptime, imgs_ccdtemp, imgs_filepath],
+                                names=("IMAGETYP", "BINNING", "FILTER", "EXPTIME", "CCD-TEMP", "FILEPATH"))
             self.images_table = vstack([self.images_table, mflat_table])
         print(f"Master flats created: {len(imgs_filepath)} total\n")
 
@@ -177,6 +192,8 @@ class _Calibrator:
                     case "DO_DARK":
                         # 'FILTER' check can be omitted
                         mdark_table = self.images_table[np.where((self.images_table["IMAGETYP"] == "Master Dark") &
+                                                                 (self.images_table["BINNING"] ==
+                                                                  self.images_table["BINNING"][_]) &
                                                                  (self.images_table["FILTER"] ==
                                                                   self.images_table["FILTER"][_]) &
                                                                  (self.images_table["EXPTIME"] ==
@@ -185,7 +202,7 @@ class _Calibrator:
                                                                       self.images_table["CCD-TEMP"][_]) <=
                                                                   self.settings["EPSILON_TEMP"]))]
                         if len(mdark_table) == 0:
-                            warn(f"No fitting master dark image for {self.images_table['FILEPATH'][_]} - skipped")
+                            warn(f"No fitting master dark images for {self.images_table['FILEPATH'][_]} - skipped")
                             continue
                         mdark_data = read_fits_file(mdark_table["FILEPATH"][0])[1]
                         print(f"File {self.images_table['FILEPATH'][_]}: Master Dark {mdark_table['FILEPATH'][0]}")
@@ -193,10 +210,12 @@ class _Calibrator:
 
                     case "DO_FLAT":
                         mflat_table = self.images_table[np.where((self.images_table["IMAGETYP"] == "Master Flat") &
+                                                                 (self.images_table["BINNING"] ==
+                                                                  self.images_table["BINNING"][_]) &
                                                                  (self.images_table["FILTER"] ==
                                                                   self.images_table["FILTER"][_]))]
                         if len(mflat_table) == 0:
-                            warn(f"No fitting master flat image for {self.images_table['FILEPATH'][_]} - skipped")
+                            warn(f"No fitting master flat images for {self.images_table['FILEPATH'][_]} - skipped")
                             continue
                         mflat_data = read_fits_file(mflat_table["FILEPATH"][0])[1]
                         print(f"File {self.images_table['FILEPATH'][_]}: Master Flat {mflat_table['FILEPATH'][0]}")
@@ -204,6 +223,8 @@ class _Calibrator:
 
                     case "DO_BOTH":
                         mdark_table = self.images_table[np.where((self.images_table["IMAGETYP"] == "Master Dark") &
+                                                                 (self.images_table["BINNING"] ==
+                                                                  self.images_table["BINNING"][_]) &
                                                                  (self.images_table["FILTER"] ==
                                                                   self.images_table["FILTER"][_]) &
                                                                  (self.images_table["EXPTIME"] ==
@@ -212,13 +233,15 @@ class _Calibrator:
                                                                       self.images_table["CCD-TEMP"][_]) <=
                                                                   self.settings["EPSILON_TEMP"]))]
                         if len(mdark_table) == 0:
-                            warn(f"No fitting master dark image for {self.images_table['FILEPATH'][_]} - skipped")
+                            warn(f"No fitting master dark images for {self.images_table['FILEPATH'][_]} - skipped")
                             continue
                         mflat_table = self.images_table[np.where((self.images_table["IMAGETYP"] == "Master Flat") &
+                                                                 (self.images_table["BINNING"] ==
+                                                                  self.images_table["BINNING"][_]) &
                                                                  (self.images_table["FILTER"] ==
                                                                   self.images_table["FILTER"][_]))]
                         if len(mflat_table) == 0:
-                            warn(f"No fitting master flat image for {self.images_table['FILEPATH'][_]} - skipped")
+                            warn(f"No fitting master flat images for {self.images_table['FILEPATH'][_]} - skipped")
                             continue
                         mdark_data = read_fits_file(mdark_table["FILEPATH"][0])[1]
                         mflat_data = read_fits_file(mflat_table["FILEPATH"][0])[1]
