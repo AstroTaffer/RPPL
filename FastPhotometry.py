@@ -33,8 +33,10 @@ def Core(path2data, do_wcs=False):
     header = hdu[0].header
     date = header['DATE-OBS'].split('T')[0]
     filter = header['FILTER']
-    obj = header['OBJNAME']
-    coords = f'{header["ALPHA"]} {header["DELTA"]}'
+    # obj = header['OBJNAME']
+    obj = 'GSC2314-0530'
+    # coords = f'{header["ALPHA"]} {header["DELTA"]}'
+    coords = '02:20:50.9 +33:20:46.6'
     hdu.close()
     C = SkyCoord(coords, unit=(u.hourangle, u.deg), frame='icrs')  # , obstime='J2015.5'
 
@@ -63,7 +65,11 @@ def Core(path2data, do_wcs=False):
 
     # open log file
     df = open(Path2Save + '/Time.txt', 'w')
-    df.write('JD\tEXPTIME\t' +
+    # df.write('JD\tEXPTIME\t' +
+    #          'Sky\tX\tY\tMax\tShiftXDon\tShiftYDon\tShiftXCom\tShiftYCom\n')
+    df.write('JD\t' +
+             'EXPTIME\tEXTINCT\t' +
+             'SKY-TEMP\t' +
              'Sky\tX\tY\tMax\tShiftXDon\tShiftYDon\tShiftXCom\tShiftYCom\n')
     output = open(Path2Save + '/Phot' + '.txt', 'a')
     counter = 0
@@ -119,7 +125,10 @@ def Core(path2data, do_wcs=False):
         df.write('{:.7f}'.format(jd) + '\t')  # JD
         # df.write('{:.7f}'.format(Header['jd']) + '\t')  # JD
         df.write('{:.1f}'.format(Header['EXPTIME']) + '\t')  # EXPTIME
-        df.write('{:.1f}'.format(Sky) + '\t')  # Sky
+
+        df.write('{:.2f}'.format(Header['EXTINCT']) + '\t' if Header['EXTINCT'] != 'UNKNOWN' else '\t')
+        df.write('{:.2f}'.format(Header['SKY-TEMP']) + '\t' if Header['SKY-TEMP'] != 'UNKNOWN' else '\t')
+        df.write('{:.2f}'.format(Sky) + '\t')  # Sky
         df.write('{0:.3f}\t{1:.3f}\t{2:.1f}\t'.format(Catalog_COM['X'][0],
                                                       Catalog_COM['Y'][0],
                                                       Catalog_COM['Max'][0]))
@@ -155,6 +164,8 @@ def Plot_Curve(path2phot, objname, date, filter):
     Trend, Cat = GetTrend(flux, cat)
     Flux_Corr = flux / Trend[:, np.newaxis]
 
+    # Condition_Report(objname, time, filter, path2phot)
+
     # tar_Flux = Flux_Corr[:, 0]
     m = -2.5 * np.log10(Flux_Corr)
     s = np.nanstd(m, axis=0)
@@ -168,7 +179,7 @@ def Plot_Curve(path2phot, objname, date, filter):
     left = 0.11
     pos = [left, 0.71, 0.85, 0.2]
     axs[0].set_position(pos)
-    axs[0].errorbar(t, m[:, 0], err, fmt='r.', label=r'1$\sigma$ errorbar', markersize=3)
+    axs[0].errorbar(t, m[:, 0], err, fmt='r.', label=r'1$\sigma$ errorbar, $\bar\sigma=$' + str(np.round(np.nanmean(err), 5)), markersize=3)
     axs[0].legend(loc=0, fontsize=6)
     axs[0].set_ylabel('Instrumental mag', fontsize=6)
     axs[0].set_xlabel(f'JD - {ZERO}', fontsize=6)
@@ -212,16 +223,12 @@ def Plot_Curve(path2phot, objname, date, filter):
 
     pos = [left, 0.07, 0.85, 0.2]
     axs[2].set_position(pos)
-    axs[2].plot(cat['B'], s, 'b.', label='exluded')
-    axs[2].plot(cat['B'][Cat['ID']], s[Cat['ID']], 'g.',
-                label='in ensemble')
-    axs[2].plot(cat['B'][0], s[0], 'r*', label=f'{objname}')
-    axs[2].set_ylabel('std(mag)', fontsize=6)
-    axs[2].set_xlabel('GAIA Bmag', fontsize=6)
+    axs[2].plot(time['JD']-ZERO, time['EXTINCT'], 'b.')
+    axs[2].set_ylabel('extinction (mag)', fontsize=6)
+    axs[2].set_xlabel(f'JD-{ZERO}', fontsize=6)
     axs[2].tick_params(axis='both', labelsize=6, direction='in')
-    axs[2].legend(loc=2, fontsize=6)
-    axs[2].set_title('std vs magnitudes', loc='left', fontsize=6)
-    axs[2].set_ylim(0, 0.05)
+    # axs[2].set_title('std vs magnitudes', loc='left', fontsize=6)
+    # axs[2].set_ylim(0, 0.05)
     axs[2].grid()
     fig.savefig(rf'{path2phot}\plot_{objname}_{date}_{camera}.pdf')
 
@@ -251,15 +258,18 @@ def Plot_Curve(path2phot, objname, date, filter):
 
     pos = [left, 0.1, width, high]
     shift_ax[2].set_position(pos)
-    shift_ax[2].plot(t, time['ShiftXCom'] - time['ShiftXDon'], 'r.')
-    shift_ax[2].set_title('Delta X shifts')
+    shift_ax[2].plot(t, time['ShiftXCom'] - time['ShiftXDon'], 'r.', label='X')
+    shift_ax[2].plot(t, time['ShiftYCom'] - time['ShiftYDon'], 'g.', label='Y')
+    shift_ax[2].set_title('Delta shifts')
     shift_ax[2].grid()
     shift_ax[2].set_xlabel(f'JD-{ZERO}')
     shift_ax[2].set_ylabel('pixel')
     shift_fig.savefig(rf'{path2phot}\plot_shifts.pdf')
 
 
-Core(r'D:\RoboPhot Data\Images\2023-09-12 TIC284305328_01\DO_BOTH\i', True)
-Core(r'D:\RoboPhot Data\Images\2023-09-12 TIC284305328_01\DO_BOTH\r', True)
-# Plot_Curve(r'D:\RoboPhot Data\Raw Images\2023_09 FLI\2023_09_08 TIC233047097_01\i\DO_BOTH\Photometry', 
-#            'TIC233047097_01', '2023-09-08', 'i')
+# Core(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\i')
+Core(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\r')
+# Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\i\Photometry',
+#            'GSC2314–0530', '2023-09-06', 'i')
+# Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\r\Photometry',
+#            'GSC2314–0530', '2023-09-06', 'r')
