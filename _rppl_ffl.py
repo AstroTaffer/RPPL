@@ -12,7 +12,8 @@ class _Lister:
 
     def list_fits_files(self):
         imgs_type = []
-        imgs_binning = []
+        imgs_xbinning = []
+        imgs_ybinning = []
         imgs_filter = []
         imgs_exptime = []
         imgs_ccdtemp = []
@@ -23,7 +24,8 @@ class _Lister:
                 if __.count(".fits") or __.count(".fit") or __.count(".fts"):
                     header = read_fits_file(_ + __)[0]
                     imgs_type.append(header["IMAGETYP"])
-                    imgs_binning.append(header["BINNING"])
+                    imgs_xbinning.append(header["XBINNING"])
+                    imgs_ybinning.append(header["YBINNING"])
                     try:
                         imgs_filter.append(header["FILTER"])
                     except KeyError:
@@ -32,6 +34,6 @@ class _Lister:
                     imgs_ccdtemp.append(round(header["CCD-TEMP"], 3))
                     imgs_filepath.append(_ + __)
 
-        self.images_table = Table([imgs_type, imgs_binning, imgs_filter, imgs_exptime, imgs_ccdtemp, imgs_filepath],
-                                  names=("IMAGETYP", "BINNING", "FILTER", "EXPTIME", "CCD-TEMP", "FILEPATH"))
+        self.images_table = Table([imgs_type, imgs_xbinning, imgs_ybinning, imgs_filter, imgs_exptime, imgs_ccdtemp, imgs_filepath],
+                                  names=("IMAGETYP", "XBINNING", "YBINNING", "FILTER", "EXPTIME", "CCD-TEMP", "FILEPATH"))
         print(f"FITS files listed: {len(self.images_table)} found\n")
