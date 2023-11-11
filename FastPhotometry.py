@@ -33,10 +33,10 @@ def Core(path2data, do_wcs=False):
     header = hdu[0].header
     date = header['DATE-OBS'].split('T')[0]
     filter = header['FILTER']
-    # obj = header['OBJNAME']
-    obj = 'GSC2314-0530'
-    # coords = f'{header["ALPHA"]} {header["DELTA"]}'
-    coords = '02:20:50.9 +33:20:46.6'
+    obj = header['OBJNAME']
+    # obj = 'GSC2314-0530'
+    coords = f'{header["ALPHA"]} {header["DELTA"]}'
+    # coords = '02:20:50.9 +33:20:46.6'
     hdu.close()
     C = SkyCoord(coords, unit=(u.hourangle, u.deg), frame='icrs')  # , obstime='J2015.5'
 
@@ -267,8 +267,8 @@ def Plot_Curve(path2phot, objname, date, filter):
     shift_fig.savefig(rf'{path2phot}\plot_shifts.pdf')
 
 
-# Core(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\i')
-Core(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\r')
+Core(r'D:\RoboPhot Data\Images\2023-11-06 GPX-TF16E-48\DO_BOTH\i', True)
+Core(r'D:\RoboPhot Data\Images\2023-11-06 GPX-TF16E-48\DO_BOTH\r', True)
 # Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\i\Photometry',
 #            'GSC2314–0530', '2023-09-06', 'i')
 # Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\r\Photometry',

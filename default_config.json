@@ -1,8 +1,8 @@
 {
-  "IN_DIRS": ["D:\\RoboPhot Data\\Images\\2023-11-05 GPX-TF16E-48\\RAW\\i\\",
-    "D:\\RoboPhot Data\\Master Images\\"],
+  "IN_DIRS": ["D:\\RoboPhotData\\Images\\2023-11-09_GPX-TF16E-48\\RAW\\r\\",
+    "D:\\RoboPhotData\\Master Images\\"],
   "CALIBRATION_TYPE": "DO_BOTH",
-  "OUT_DIR": "D:\\RoboPhot Data\\Images\\2023-11-05 GPX-TF16E-48\\DO_BOTH\\i\\",
+  "OUT_DIR": "D:\\RoboPhotData\\Images\\2023-11-09_GPX-TF16E-48\\DO_BOTH\\r\\",
   "EPSILON_TEMP": 1,
   "MIN_IMAGES_FOR_MASTER": 5,
   "CALIBRATED_BITPIX": -64
