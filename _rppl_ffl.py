@@ -24,8 +24,13 @@ class _Lister:
                 if __.count(".fits") or __.count(".fit") or __.count(".fts"):
                     header = read_fits_file(_ + __)[0]
                     imgs_type.append(header["IMAGETYP"])
-                    imgs_xbinning.append(header["XBINNING"])
-                    imgs_ybinning.append(header["YBINNING"])
+                    try:
+                        imgs_xbinning.append(header["XBINNING"])
+                        imgs_ybinning.append(header["YBINNING"])
+                    except KeyError:
+                        b = header["BINNING"]
+                        imgs_xbinning.append(b)
+                        imgs_ybinning.append(b)
                     try:
                         imgs_filter.append(header["FILTER"])
                     except KeyError:
