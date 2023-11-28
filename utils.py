@@ -1,6 +1,9 @@
 import json
 from os.path import exists
-from os import makedirs
+import os
+import subprocess
+import numpy as np
+from astropy.io import ascii
 
 import astropy.io.fits as fits
 
@@ -15,7 +18,7 @@ def read_fits_file(file_name):
 
 def check_out_directory(out_dir):
     if not exists(out_dir):
-        makedirs(out_dir)
+        os.makedirs(out_dir)
 
 
 # LAST UPDATE 05-09-2023
@@ -29,3 +32,31 @@ def restore_default_config():
         "CALIBRATED_BITPIX": 16}
     with open(f"default_config.json", "w") as confile:
         json.dump(settings, confile, indent=4)
+
+
+def do_sex(input_file, output_file):
+    # cwd = 'F:\\'
+    cwd = os.getcwd() + '\\'
+    Sex = cwd + 'Sex\Extract.exe '
+    dSex = ' -c ' + cwd + 'Sex\default.sex'
+    dPar = ' -PARAMETERS_NAME ' + cwd + 'Sex\default.par'
+    dFilt = ' -FILTER_NAME ' + cwd + r'Sex\tophat_2.5_3x3.conv'
+    NNW = ' -STARNNW_NAME ' + cwd + 'Sex\default.nnw'
+
+    shell = Sex + "\"" + input_file + "\"" + dSex + dPar + dFilt + NNW + ' -CATALOG_NAME ' + "\"" + output_file + "\""
+    print(shell)
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    child = subprocess.run(shell, timeout=60, startupinfo=startupinfo)
+
+    if child.returncode == 0 and os.path.isfile(output_file):
+        print('Ok')
+    else:
+        print('Error')
+        return 0, 0, 0, 0
+    tbl = ascii.read(output_file)
+    med_fwhm = np.median(tbl['FWHM_IMAGE'])
+    med_ell = np.median(tbl['ELLIPTICITY'])
+    med_bkg = np.median(tbl['BACKGROUND'])
+    med_zeropoi = np.median(tbl['ZEROPOI'])
+    return med_fwhm, med_ell, med_bkg, med_zeropoi

@@ -267,8 +267,10 @@ def Plot_Curve(path2phot, objname, date, filter):
     shift_fig.savefig(rf'{path2phot}\plot_shifts.pdf')
 
 
-Core(r'D:\RoboPhot Data\Images\2023-11-06 GPX-TF16E-48\DO_BOTH\i', True)
-Core(r'D:\RoboPhot Data\Images\2023-11-06 GPX-TF16E-48\DO_BOTH\r', True)
+Core(r'D:\RoboPhotData\Images\2023-11-07_GPX-TF16E-48\DO_BOTH\i', True)
+Core(r'D:\RoboPhotData\Images\2023-11-07_GPX-TF16E-48\DO_BOTH\r', True)
+Core(r'D:\RoboPhotData\Images\2023-11-09_GPX-TF16E-48\DO_BOTH\i', True)
+Core(r'D:\RoboPhotData\Images\2023-11-09_GPX-TF16E-48\DO_BOTH\r', True)
 # Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\i\Photometry',
 #            'GSC2314–0530', '2023-09-06', 'i')
 # Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\r\Photometry',

@@ -42,16 +42,17 @@ def Sisyphus():
                     print(f"Calibration: working on {file}")
                     if not row[DO_DARK_NAME]:
                         # DoDark
-                        pass
-                    if not row[DO_FLAT_NAME]:
-                        # DoFlat
-                        pass
-                    if not row[DO_ASTROMETRY_NAME]:
-                        if ass.compute(output_path):
-                            row[DO_ASTROMETRY_NAME] = True
-                        else:
-                            row[DO_ASTROMETRY_NAME] = False
-                            error += 1
+                        # pass
+                        if not row[DO_FLAT_NAME]:
+                            # DoFlat
+                            # pass
+                            if not row[DO_ASTROMETRY_NAME]:
+                                if ass.compute(output_path):
+                                    row[DO_ASTROMETRY_NAME] = True
+                                    # do_sex
+                                else:
+                                    row[DO_ASTROMETRY_NAME] = False
+                                    error += 1
                     row[TROUBLES_NAME] = error
                     # update
             else:
