@@ -2,10 +2,10 @@ from warnings import warn
 
 from _rppl_ios import _IOHandler
 from _rppl_ffl import _Lister
-from _rppl_clb import _Calibrator
+from _rppl_clb import _Calibrator_Old
 
 
-class RPPLData(_IOHandler, _Lister, _Calibrator):
+class RPPLData(_IOHandler, _Lister, _Calibrator_Old):
     # noinspection PyMissingConstructor
     def __init__(self, config="default_config.json", **kwargs):
         self.images_table = None

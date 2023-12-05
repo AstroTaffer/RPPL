@@ -4,7 +4,9 @@ import os
 import subprocess
 import numpy as np
 from astropy.io import ascii
-
+import psycopg2
+from sqlalchemy import create_engine
+from sqlalchemy import URL
 import astropy.io.fits as fits
 
 
@@ -60,3 +62,24 @@ def do_sex(input_file, output_file):
     med_bkg = np.median(tbl['BACKGROUND'])
     med_zeropoi = np.median(tbl['ZEROPOI'])
     return med_fwhm, med_ell, med_bkg, med_zeropoi
+
+
+def connect_to_db():
+    # DB params
+    db_host = "192.168.240.5"
+    db_name = "postgres"
+    db_user = "postgres"
+    db_pass = 'Vjlekm_hfccnjzybz'
+    url_object = URL.create(
+        "postgresql",
+        username=db_user,
+        password=db_pass,
+        host=db_host,
+        database=db_name,
+    )
+    try:
+        # open connection
+        return create_engine(url_object)
+    except Exception as e:
+        print('Error while connecting to db')
+        print(e)
