@@ -8,6 +8,8 @@ from photometric_calibration import apply_dark, apply_flat
 time_wait_sec = 10
 # root = r'D:\RoboPhotData\Images'
 # BD_path = root + r'\Calibrated.csv'
+DARK_ROOT = r'D:\_Darks\mdark_'   # mflat_exp_temp
+FLAT_ROOT = r'D:\_Flats\mflat_'
 ID = 'frame_id'
 PATH_NAME = 'frame_path'
 COL_PATH_NAME = 'calibration_frame_path'
@@ -50,8 +52,8 @@ def sisyphus():
                             print(f"Can\'t apply dark {dark}")
 
                 if row[DO_DARK_NAME] and not row[DO_FLAT_NAME]:
-                    q_get_for_do_dark = f"SELECT get_m_flat_frames({row[ID]})"
-                    flats_table = pd.read_sql_query(q_get_for_do_dark, eng)
+                    q_get_for_do_flat = f"SELECT get_m_flat_frames({row[ID]})"
+                    flats_table = pd.read_sql_query(q_get_for_do_flat, eng)
                     for flat in flats_table:
                         if apply_flat(row[PATH_NAME], flat, row[COL_PATH_NAME]):
                             row[DO_FLAT_NAME] = True
@@ -77,7 +79,12 @@ def sisyphus():
 
                 eng.execute(q_update)
         # make master files
-
+        q_get_m_dark_frame = "SELECT "
+        m_darks = pd.read_sql_query(q_get_m_dark_frame, eng)
+        for m_dark in m_darks:
+            q_get_darks_for_m = "SELECT "
+            darks_for_master = pd.read_sql_query(q_get_darks_for_m, eng)
+            # make_master_dark()
     timer.start()
 
 

@@ -37,14 +37,7 @@ def apply_flat(raw_frame_fp, mflat_frame_fp, out_frame_fp):
     return True
 
 
-def make_master_dark(dark_frames_fp, dark_frames_ccd_temp, out_frame_fp, min_frames_num=5, temp_epsilon=1):
-    mean_ccd_temp = np.round(np.mean(dark_frames_ccd_temp), 3)
-    dark_frames_fp = dark_frames_fp[np.where(abs(dark_frames_ccd_temp - mean_ccd_temp) <= temp_epsilon)]
-
-    if len(dark_frames_fp) < min_frames_num:
-        print(f"Less than {min_frames_num} dark frames with CCD-TEMP near {mean_ccd_temp} - can't make master dark")
-        return False
-
+def make_master_dark(dark_frames_fp, mean_ccd_temp, out_frame_fp):
     buff_frame_hdr = read_fits_file(dark_frames_fp[0])[0]
     dark_frames_data = np.zeros((len(dark_frames_fp), buff_frame_hdr["NAXIS1"], buff_frame_hdr["NAXIS2"]),
                                 dtype=np.float32)
@@ -67,19 +60,7 @@ def make_master_dark(dark_frames_fp, dark_frames_ccd_temp, out_frame_fp, min_fra
     return True
 
 
-def make_master_flat(flat_frames_fp, flat_frames_ccd_temp, out_frame_fp, min_frames_num=5, temp_epsilon=1):
-    mean_ccd_temp = np.round(np.mean(flat_frames_ccd_temp), 3)
-    flat_frames_fp = flat_frames_fp[np.where(abs(flat_frames_ccd_temp - mean_ccd_temp) <= temp_epsilon)]
-
-    if len(flat_frames_fp) < min_frames_num:
-        print(f"Less than {min_frames_num} flat frames with CCD-TEMP near {mean_ccd_temp} - can't make master flat")
-        return False
-
-    "TODO: get_mdark_frame"
-    mdark_frame_fp = "PLACEHOLDER"
-    if False:  # if master dark not found
-        print(f"No master dark images with CCD-TEMP near {mean_ccd_temp}")
-        return False
+def make_master_flat(flat_frames_fp, mdark_frame_fp, mean_ccd_temp, out_frame_fp):
     mdark_frame_data = read_fits_file(mdark_frame_fp)[1]
 
     buff_frame_hdr = read_fits_file(flat_frames_fp[0])[0]
