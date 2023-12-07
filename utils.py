@@ -4,7 +4,6 @@ import os
 import subprocess
 import numpy as np
 from astropy.io import ascii
-import psycopg2
 from sqlalchemy import create_engine
 from sqlalchemy import URL
 import astropy.io.fits as fits
