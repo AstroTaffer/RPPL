@@ -6,85 +6,103 @@ from utils import read_fits_file
 
 
 def apply_dark(raw_frame_fp, mdark_frame_fp, out_frame_fp):
-    raw_frame_header, raw_frame_data = read_fits_file(raw_frame_fp)
-    mdark_frame_data = read_fits_file(mdark_frame_fp)[1]
+    try:
+        raw_frame_header, raw_frame_data = read_fits_file(raw_frame_fp)
+        mdark_frame_data = read_fits_file(mdark_frame_fp)[1]
 
-    raw_frame_data = raw_frame_data.astype(np.float32) - mdark_frame_data
+        raw_frame_data = raw_frame_data.astype(np.float32) - mdark_frame_data
 
-    raw_frame_data = np.round(raw_frame_data).astype(np.uint16)
-    raw_frame_header['BITPIX'] = 16
-    raw_frame_header["HISTORY"] = "CALIBRATED"
+        raw_frame_data = np.round(raw_frame_data).astype(np.uint16)
+        raw_frame_header["BITPIX"] = (16, "bits per data value")
+        raw_frame_header["HISTORY"] = "CALIBRATED"
 
-    out_frame_hdu = fits.PrimaryHDU(raw_frame_data, raw_frame_header)
-    out_frame_hdul = fits.HDUList([out_frame_hdu])
-    out_frame_hdul.writeto(out_frame_fp, overwrite=True)
-    return True
+        out_frame_hdu = fits.PrimaryHDU(raw_frame_data, raw_frame_header)
+        out_frame_hdul = fits.HDUList([out_frame_hdu])
+        out_frame_hdul.writeto(out_frame_fp, overwrite=True)
+        return True
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        return False
 
 
 def apply_flat(raw_frame_fp, mflat_frame_fp, out_frame_fp):
-    raw_frame_header, raw_frame_data = read_fits_file(raw_frame_fp)
-    mflat_frame_data = read_fits_file(mflat_frame_fp)[1]
+    try:
+        raw_frame_header, raw_frame_data = read_fits_file(raw_frame_fp)
+        mflat_frame_data = read_fits_file(mflat_frame_fp)[1]
 
-    raw_frame_data = raw_frame_data.astype(np.float32) / mflat_frame_data
+        raw_frame_data = raw_frame_data.astype(np.float32) / mflat_frame_data
 
-    raw_frame_data = np.round(raw_frame_data).astype(np.uint16)
-    raw_frame_header['BITPIX'] = 16
-    raw_frame_header["HISTORY"] = "CALIBRATED"
+        raw_frame_data = np.round(raw_frame_data).astype(np.uint16)
+        raw_frame_header["BITPIX"] = (16, "bits per data value")
+        raw_frame_header["HISTORY"] = "CALIBRATED"
 
-    out_frame_hdu = fits.PrimaryHDU(raw_frame_data, raw_frame_header)
-    out_frame_hdul = fits.HDUList([out_frame_hdu])
-    out_frame_hdul.writeto(out_frame_fp, overwrite=True)
-    return True
-
-
-def make_master_dark(dark_frames_fp, mean_ccd_temp, out_frame_fp):
-    buff_frame_hdr = read_fits_file(dark_frames_fp[0])[0]
-    dark_frames_data = np.zeros((len(dark_frames_fp), buff_frame_hdr["NAXIS1"], buff_frame_hdr["NAXIS2"]),
-                                dtype=np.float32)
-
-    for _ in range(len(dark_frames_fp)):
-        dark_frames_data[_] = read_fits_file(dark_frames_fp[_])[1]
-
-    mdark_frame_data = np.nanmean(sigma_clip(dark_frames_data, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
-
-    buff_frame_hdr['BITPIX'] = -64
-    buff_frame_hdr["DATE-OBS"] = ""
-    buff_frame_hdr["ALPHA"] = ""
-    buff_frame_hdr["DELTA"] = ""
-    buff_frame_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions [C]")
-    buff_frame_hdr["IMAGETYP"] = "Master Dark"
-
-    mdark_frame_hdu = fits.PrimaryHDU(mdark_frame_data, buff_frame_hdr)
-    mdark_frame_hdul = fits.HDUList([mdark_frame_hdu])
-    mdark_frame_hdul.writeto(out_frame_fp, overwrite=True)
-    return True
+        out_frame_hdu = fits.PrimaryHDU(raw_frame_data, raw_frame_header)
+        out_frame_hdul = fits.HDUList([out_frame_hdu])
+        out_frame_hdul.writeto(out_frame_fp, overwrite=True)
+        return True
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        return False
 
 
-def make_master_flat(flat_frames_fp, mdark_frame_fp, mean_ccd_temp, out_frame_fp):
-    mdark_frame_data = read_fits_file(mdark_frame_fp)[1]
+def make_master_dark(dark_frames_fp, mean_ccd_temp, creation_date, out_frame_fp):
+    try:
+        buff_frame_hdr = read_fits_file(dark_frames_fp[0])[0]
+        dark_frames_data = np.zeros((len(dark_frames_fp), buff_frame_hdr["NAXIS1"], buff_frame_hdr["NAXIS2"]),
+                                    dtype=np.float32)
 
-    buff_frame_hdr = read_fits_file(flat_frames_fp[0])[0]
-    flat_frames_data = np.zeros((len(flat_frames_fp), buff_frame_hdr["NAXIS1"], buff_frame_hdr["NAXIS2"]),
-                                dtype=np.float32)
+        for _ in range(len(dark_frames_fp)):
+            dark_frames_data[_] = read_fits_file(dark_frames_fp[_])[1]
 
-    for _ in range(len(flat_frames_fp)):
-        flat_frames_data[_] = read_fits_file(flat_frames_fp[_])[1]
-        flat_frames_data[_] -= mdark_frame_data
-        flat_frames_data[_] /= np.mean(flat_frames_data[_])
+        mdark_frame_data = np.nanmean(sigma_clip(dark_frames_data, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
 
-    mflat_frame_data = np.nanmean(sigma_clip(flat_frames_data, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
+        del buff_frame_hdr["DATE-OBS"]
+        del buff_frame_hdr["ALPHA"]
+        del buff_frame_hdr["DELTA"]
+        buff_frame_hdr["BITPIX"] = (-64, "bits per data value")
+        buff_frame_hdr["DATE"] = (creation_date, "date-time of file creation")
+        buff_frame_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions [C]")
+        buff_frame_hdr["IMAGETYP"] = "Master Dark"
 
-    buff_frame_hdr['BITPIX'] = -64
-    buff_frame_hdr["DATE-OBS"] = ""
-    buff_frame_hdr["ALPHA"] = ""
-    buff_frame_hdr["DELTA"] = ""
-    buff_frame_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions [C]")
-    buff_frame_hdr["IMAGETYP"] = "Master Flat"
+        mdark_frame_hdu = fits.PrimaryHDU(mdark_frame_data, buff_frame_hdr)
+        mdark_frame_hdul = fits.HDUList([mdark_frame_hdu])
+        mdark_frame_hdul.writeto(out_frame_fp, overwrite=True)
+        return True
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        return False
 
-    mflat_frame_hdu = fits.PrimaryHDU(mflat_frame_data, buff_frame_hdr)
-    mflat_frame_hdul = fits.HDUList([mflat_frame_hdu])
-    mflat_frame_hdul.writeto(out_frame_fp, overwrite=True)
-    return True
+
+def make_master_flat(flat_frames_fp, mdark_frame_fp, mean_ccd_temp, creation_date, out_frame_fp):
+    try:
+        mdark_frame_data = read_fits_file(mdark_frame_fp)[1]
+
+        buff_frame_hdr = read_fits_file(flat_frames_fp[0])[0]
+        flat_frames_data = np.zeros((len(flat_frames_fp), buff_frame_hdr["NAXIS1"], buff_frame_hdr["NAXIS2"]),
+                                    dtype=np.float32)
+
+        for _ in range(len(flat_frames_fp)):
+            flat_frames_data[_] = read_fits_file(flat_frames_fp[_])[1]
+            flat_frames_data[_] -= mdark_frame_data
+            flat_frames_data[_] /= np.mean(flat_frames_data[_])
+
+        mflat_frame_data = np.nanmean(sigma_clip(flat_frames_data, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
+
+        del buff_frame_hdr["DATE-OBS"]
+        del buff_frame_hdr["ALPHA"]
+        del buff_frame_hdr["DELTA"]
+        buff_frame_hdr["BITPIX"] = (-64, "bits per data value")
+        buff_frame_hdr["DATE"] = (creation_date, "date-time of file creation")
+        buff_frame_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions [C]")
+        buff_frame_hdr["IMAGETYP"] = "Master Flat"
+
+        mflat_frame_hdu = fits.PrimaryHDU(mflat_frame_data, buff_frame_hdr)
+        mflat_frame_hdul = fits.HDUList([mflat_frame_hdu])
+        mflat_frame_hdul.writeto(out_frame_fp, overwrite=True)
+        return True
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        return False
 
 
 # ----- KEEP A COPY OF OLD CODE JUST IN CASE ---- #
