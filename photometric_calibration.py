@@ -57,8 +57,8 @@ def make_master_dark(dark_frames_fp, mean_ccd_temp, creation_date, out_frame_fp)
         mdark_frame_data = np.nanmean(sigma_clip(dark_frames_data, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
 
         del buff_frame_hdr["DATE-OBS"]
-        del buff_frame_hdr["ALPHA"]
-        del buff_frame_hdr["DELTA"]
+        # del buff_frame_hdr["ALPHA"]
+        # del buff_frame_hdr["DELTA"]
         buff_frame_hdr["BITPIX"] = (-64, "bits per data value")
         buff_frame_hdr["DATE"] = (creation_date, "date-time of file creation")
         buff_frame_hdr["CCD-TEMP"] = (mean_ccd_temp, "mean temperature of sum of expositions [C]")
