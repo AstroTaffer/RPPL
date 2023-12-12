@@ -57,11 +57,11 @@ def do_sex(input_file):
         print('Error')
         return 0, 0, 0, 0
     tbl = ascii.read(output_file)
-    med_fwhm = np.median(tbl['FWHM_IMAGE'])
-    med_ell = np.median(tbl['ELLIPTICITY'])
-    med_bkg = np.median(tbl['BACKGROUND'])
-    med_zeropoi = np.median(tbl['ZEROPOI'])
-    return med_fwhm, med_ell, med_bkg, med_zeropoi
+    med_fwhm = np.round(np.median(tbl['FWHM_IMAGE']), 2)
+    med_ell = np.round(np.median(tbl['ELLIPTICITY']), 2)
+    med_bkg = np.round(np.median(tbl['BACKGROUND']), 2)
+    med_zeropoi = np.round(np.median(tbl['ZEROPOI']), 2)
+    return med_fwhm, med_ell, med_bkg, med_zeropoi, output_file
 
 
 def connect_to_db():

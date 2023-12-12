@@ -26,7 +26,7 @@ med_fwhm = 0
 med_ell = 0
 med_bkg = 0
 med_zeropoi = 0
-
+sex_path = ''
 
 def sisyphus():
     # timer.cancel()
@@ -104,14 +104,16 @@ def sisyphus():
                 if ass.compute(row[COL_PATH_NAME]):
                     row[DO_ASTROMETRY_NAME] = True
                     print('Made flat')
-                    med_fwhm, med_ell, med_bkg, med_zeropoi = utils.do_sex(row[COL_PATH_NAME])
+                    med_fwhm, med_ell, med_bkg, med_zeropoi, sex_path = utils.do_sex(row[COL_PATH_NAME])
                 else:
                     row[DO_ASTROMETRY_NAME] = False
                     row[TROUBLES_NAME] += 1
                     print("Can\'t make WCS")
             # update
-            q_update = (f"UPDATE robophot_frames SET ({DO_DARK_NAME}, {DO_FLAT_NAME}, {DO_ASTROMETRY_NAME}, "
-                        f"{TROUBLES_NAME}) = ({row[DO_DARK_NAME]}, {row[DO_FLAT_NAME]}, {row[DO_ASTROMETRY_NAME]}, "
+            q_update = (f"UPDATE robophot_frames SET (sex_path, sex_fwhm, sex_ell, sex_background, sex_zeropoint, "
+                        f"{DO_DARK_NAME}, {DO_FLAT_NAME}, {DO_ASTROMETRY_NAME}, "
+                        f"{TROUBLES_NAME}) = ({sex_path}, {med_fwhm}, {med_ell}, {med_bkg}, {med_zeropoi}, "
+                        f"{row[DO_DARK_NAME]}, {row[DO_FLAT_NAME]}, {row[DO_ASTROMETRY_NAME]}, "
                         f"{row[TROUBLES_NAME]}) WHERE {ID} = {row[ID]}")
             with eng.begin() as conn:     # TRANSACTION
                 conn.execute(text(q_update))
