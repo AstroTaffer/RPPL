@@ -55,7 +55,7 @@ def do_sex(input_file):
         print('Ok')
     else:
         print('Error')
-        return 0, 0, 0, 0
+        return 0, 0, 0, 0, ''
     tbl = ascii.read(output_file)
     med_fwhm = np.round(np.median(tbl['FWHM_IMAGE']), 2)
     med_ell = np.round(np.median(tbl['ELLIPTICITY']), 2)
