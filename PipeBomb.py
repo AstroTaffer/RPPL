@@ -22,6 +22,10 @@ TROUBLES_NAME = 'trouble_count'
 # names = [PATH_NAME, DO_DARK_NAME, DO_FLAT_NAME, DO_ASTROMETRY_NAME, TROUBLES_NAME]
 API_KEY = 'hipfhzhlzygnlvix'
 delta_temp = 1
+med_fwhm = 0
+med_ell = 0
+med_bkg = 0
+med_zeropoi = 0
 
 
 def sisyphus():
@@ -100,7 +104,7 @@ def sisyphus():
                 if ass.compute(row[COL_PATH_NAME]):
                     row[DO_ASTROMETRY_NAME] = True
                     print('Made flat')
-                    # do_sex
+                    med_fwhm, med_ell, med_bkg, med_zeropoi = utils.do_sex(row[COL_PATH_NAME])
                 else:
                     row[DO_ASTROMETRY_NAME] = False
                     row[TROUBLES_NAME] += 1

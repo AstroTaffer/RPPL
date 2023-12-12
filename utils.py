@@ -35,7 +35,7 @@ def restore_default_config():
         json.dump(settings, confile, indent=4)
 
 
-def do_sex(input_file, output_file):
+def do_sex(input_file):
     # cwd = 'F:\\'
     cwd = os.getcwd() + '\\'
     Sex = cwd + 'Sex\Extract.exe '
@@ -43,6 +43,7 @@ def do_sex(input_file, output_file):
     dPar = ' -PARAMETERS_NAME ' + cwd + 'Sex\default.par'
     dFilt = ' -FILTER_NAME ' + cwd + r'Sex\tophat_2.5_3x3.conv'
     NNW = ' -STARNNW_NAME ' + cwd + 'Sex\default.nnw'
+    output_file = input_file.replace('fits.gz', 'cat')
 
     shell = Sex + "\"" + input_file + "\"" + dSex + dPar + dFilt + NNW + ' -CATALOG_NAME ' + "\"" + output_file + "\""
     print(shell)
