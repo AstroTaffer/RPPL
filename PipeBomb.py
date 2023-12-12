@@ -104,15 +104,15 @@ def sisyphus():
                 if ass.compute(row[COL_PATH_NAME]):
                     row[DO_ASTROMETRY_NAME] = True
                     print('Made flat')
-                    med_fwhm, med_ell, med_bkg, med_zeropoi, sex_path = utils.do_sex(row[COL_PATH_NAME])
+                    med_fwhm, med_ell, med_bkg, sex_path = utils.do_sex(row[COL_PATH_NAME])
                 else:
                     row[DO_ASTROMETRY_NAME] = False
                     row[TROUBLES_NAME] += 1
                     print("Can\'t make WCS")
             # update
-            q_update = (f"UPDATE robophot_frames SET (sex_path, sex_fwhm, sex_ell, sex_background, sex_zeropoint, "
+            q_update = (f"UPDATE robophot_frames SET (sex_path, sex_fwhm, sex_ell, sex_background, "
                         f"{DO_DARK_NAME}, {DO_FLAT_NAME}, {DO_ASTROMETRY_NAME}, "
-                        f"{TROUBLES_NAME}) = ({sex_path}, {med_fwhm}, {med_ell}, {med_bkg}, {med_zeropoi}, "
+                        f"{TROUBLES_NAME}) = ({sex_path}, {med_fwhm}, {med_ell}, {med_bkg}, "
                         f"{row[DO_DARK_NAME]}, {row[DO_FLAT_NAME]}, {row[DO_ASTROMETRY_NAME]}, "
                         f"{row[TROUBLES_NAME]}) WHERE {ID} = {row[ID]}")
             with eng.begin() as conn:     # TRANSACTION

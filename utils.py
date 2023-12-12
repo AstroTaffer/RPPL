@@ -60,8 +60,8 @@ def do_sex(input_file):
     med_fwhm = np.round(np.median(tbl['FWHM_IMAGE']), 2)
     med_ell = np.round(np.median(tbl['ELLIPTICITY']), 2)
     med_bkg = np.round(np.median(tbl['BACKGROUND']), 2)
-    med_zeropoi = np.round(np.median(tbl['ZEROPOI']), 2)
-    return med_fwhm, med_ell, med_bkg, med_zeropoi, output_file
+    # med_zeropoi = np.round(np.median(tbl['ZEROPOI']), 2)
+    return med_fwhm, med_ell, med_bkg, output_file
 
 
 def connect_to_db():
