@@ -1,8 +1,10 @@
+import os.path
+
 import numpy as np
 import astropy.io.fits as fits
 from astropy.stats import sigma_clip
 
-from utils import read_fits_file
+from utils import read_fits_file, make_out_path
 
 
 def apply_dark(raw_frame_fp, mdark_frame_fp, out_frame_fp):
@@ -18,6 +20,7 @@ def apply_dark(raw_frame_fp, mdark_frame_fp, out_frame_fp):
 
         out_frame_hdu = fits.PrimaryHDU(raw_frame_data, raw_frame_header)
         out_frame_hdul = fits.HDUList([out_frame_hdu])
+        make_out_path(out_frame_fp)
         out_frame_hdul.writeto(out_frame_fp, overwrite=True)
         return True
     except Exception as err:
@@ -38,10 +41,11 @@ def apply_flat(raw_frame_fp, mflat_frame_fp, out_frame_fp):
 
         out_frame_hdu = fits.PrimaryHDU(raw_frame_data, raw_frame_header)
         out_frame_hdul = fits.HDUList([out_frame_hdu])
+        make_out_path(out_frame_fp)
         out_frame_hdul.writeto(out_frame_fp, overwrite=True)
         return True
     except Exception as err:
-        print(f"Unexpected {err=}, {type(err)=}")
+        print(f"Unexpected {err=}, {type(err)=}, {err.args}")
         return False
 
 
@@ -66,10 +70,11 @@ def make_master_dark(dark_frames_fp, mean_ccd_temp, creation_date, out_frame_fp)
 
         mdark_frame_hdu = fits.PrimaryHDU(mdark_frame_data, buff_frame_hdr)
         mdark_frame_hdul = fits.HDUList([mdark_frame_hdu])
+        make_out_path(out_frame_fp)
         mdark_frame_hdul.writeto(out_frame_fp, overwrite=True)
         return True
     except Exception as err:
-        print(f"Unexpected {err=}, {type(err)=}")
+        print(f"Unexpected {err=}, {type(err)=}, {err.args}")
         return False
 
 
@@ -98,6 +103,7 @@ def make_master_flat(flat_frames_fp, mdark_frame_fp, mean_ccd_temp, creation_dat
 
         mflat_frame_hdu = fits.PrimaryHDU(mflat_frame_data, buff_frame_hdr)
         mflat_frame_hdul = fits.HDUList([mflat_frame_hdu])
+        # make_out_path(out_frame_fp)
         mflat_frame_hdul.writeto(out_frame_fp, overwrite=True)
         return True
     except Exception as err:

@@ -83,3 +83,9 @@ def connect_to_db():
     except Exception as e:
         print('Error while connecting to db')
         print(e)
+        
+
+def make_out_path(out_frame_fp):
+    path2save = "\\".join(out_frame_fp.split('\\')[:-1])
+    if not os.path.exists(path2save):
+        os.makedirs(path2save)
