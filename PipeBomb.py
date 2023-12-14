@@ -14,10 +14,11 @@ DARK_ROOT = r'D:\_Darks\mdark_'   # mflat_exp_temp
 FLAT_ROOT = r'D:\_Flats\mflat_'
 ID = 'frame_id'
 PATH_NAME = 'frame_path'
-COL_PATH_NAME = 'calibration_frame_path'
+CAL_PATH_NAME = 'calibration_frame_path'
 DO_DARK_NAME = 'is_do_dark'
 DO_FLAT_NAME = 'is_do_flat'
 DO_ASTROMETRY_NAME = 'is_do_astrometry'
+DO_SEX_NAME = 'is_do_sex'
 TROUBLES_NAME = 'trouble_count'
 # names = [PATH_NAME, DO_DARK_NAME, DO_FLAT_NAME, DO_ASTROMETRY_NAME, TROUBLES_NAME]
 API_KEY = 'hipfhzhlzygnlvix'
@@ -39,10 +40,10 @@ def sisyphus():
     print('Connected to robophot db')
     # query = "SELECT get_frames_for_cal() FROM robophot_frames"
     query = ("SELECT frame_id, frame_path, calibration_frame_path, coord2000, "
-             "frame_filter, date_utc, ccd_temp, is_do_dark, is_do_flat, is_do_astrometry, trouble_count "
+             "frame_filter, date_utc, ccd_temp, is_do_dark, is_do_flat, is_do_astrometry, is_do_sex, trouble_count "
              "FROM robophot_frames, robophot_tasks "
              "WHERE fk_task_id = task_id AND (frame_type = 'Object') AND "
-             "(NOT is_do_dark OR NOT is_do_flat OR NOT is_do_astrometry OR NOT trouble_count > 3) "
+             "(NOT is_do_dark OR NOT is_do_flat OR NOT is_do_astrometry OR NOT is_do_sex OR NOT trouble_count > 3) "
              "ORDER BY (CASE "
              "WHEN frame_filter = 'i' THEN 1 "
              "WHEN frame_filter = 'r' THEN 2 "
@@ -74,14 +75,15 @@ def sisyphus():
                                      f"LIMIT 4")
                 darks_table = pd.read_sql_query(q_get_for_do_dark, eng)
                 for d_index, dark in darks_table.iterrows():
-                    if apply_dark(row[PATH_NAME], dark['m_frame_path'], row[COL_PATH_NAME]):
+                    if apply_dark(row[PATH_NAME], dark['m_frame_path'], row[CAL_PATH_NAME]):
                         row[DO_DARK_NAME] = True
-                        print(f'Dark applied to frame #{row[ID]}')
-                        done_cal += 1
+                        print(f'Dark applied to frame #{row[ID]}, path to cal {row[CAL_PATH_NAME]}')
                         break
                     else:
                         row[TROUBLES_NAME] += 1
-                        print(f"Can\'t apply dark {dark} on file {row[PATH_NAME]}")
+                        print(f"Can\'t apply dark {dark['m_frame_path']} on frame #{row[ID]}, "
+                              f"path {row[CAL_PATH_NAME]}")
+                    done_cal += 1
 
             if row[DO_DARK_NAME] and not row[DO_FLAT_NAME]:
                 # q_get_for_do_flat = f"SELECT get_m_flat_frames({row[ID]})"
@@ -95,35 +97,41 @@ def sisyphus():
                     f"LIMIT 4")
                 flats_table = pd.read_sql_query(q_get_for_do_flat, eng)
                 for f_indx, flat in flats_table.iterrows():
-                    if apply_flat(row[PATH_NAME], flat['m_frame_path'], row[COL_PATH_NAME]):
+                    if apply_flat(row[PATH_NAME], flat['m_frame_path'], row[CAL_PATH_NAME]):
                         row[DO_FLAT_NAME] = True
-                        print(f'Flat applied to frame #{row[ID]}')
-                        done_cal += 1
+                        print(f'Flat applied to frame #{row[ID]}, path {row[CAL_PATH_NAME]}')
                         break
                     else:
                         row[TROUBLES_NAME] += 1
-                        print(f"Can\'t apply flat {flat} on file {row[PATH_NAME]}")
+                        print(f"Can\'t apply flat {flat['m_frame_path']} on frame #{row[ID]}, "
+                              f"path {row[CAL_PATH_NAME]}")
+                    done_cal += 1
 
             if row[DO_DARK_NAME] and row[DO_FLAT_NAME] and not row[DO_ASTROMETRY_NAME]:
-                if ass.compute(row[COL_PATH_NAME]):
+                if ass.compute(row[CAL_PATH_NAME]):
                     row[DO_ASTROMETRY_NAME] = True
-                    print(f'Made WCS on frame #{row[ID]}')
-                    done_cal += 1
+                    print(f'Made WCS on frame #{row[ID]}, path {row[CAL_PATH_NAME]}')
                 else:
                     row[DO_ASTROMETRY_NAME] = False
                     row[TROUBLES_NAME] += 1
-                    print(f"Can\'t make WCS on file {row[PATH_NAME]}")
-            # if row[DO_DARK_NAME] and row[DO_FLAT_NAME] and row[DO_ASTROMETRY_NAME] and done_cal > 0:
-            #     med_fwhm, med_ell, med_bkg, sex_path = utils.do_sex(row[COL_PATH_NAME])
-            #     print('Sex')
-            #     done_cal += 1
+                    print(f"Can\'t make WCS on frame #{row[ID]}, path {row[CAL_PATH_NAME]}")
+                done_cal += 1
+            if row[DO_DARK_NAME] and row[DO_FLAT_NAME] and row[DO_ASTROMETRY_NAME] and not row[DO_SEX_NAME]:
+                med_fwhm, med_ell, med_bkg, sex_path = utils.do_sex(row[CAL_PATH_NAME])
+                if med_fwhm > 0:
+                    print('Made sex')
+                    row[DO_SEX_NAME] = True
+                else:
+                    print(f'Can\'t do sex on frame #{row[ID]}, path {row[CAL_PATH_NAME]}')
+                    row[TROUBLES_NAME] += 1
+                done_cal += 1
             # update
             if done_cal > 0:
                 q_update = (f"UPDATE robophot_frames SET (sex_path, sex_fwhm, sex_ell, sex_background, "
-                            f"{DO_DARK_NAME}, {DO_FLAT_NAME}, {DO_ASTROMETRY_NAME}, "
+                            f"{DO_DARK_NAME}, {DO_FLAT_NAME}, {DO_ASTROMETRY_NAME}, {DO_SEX_NAME}, "
                             f"{TROUBLES_NAME}) = ('{sex_path}', {med_fwhm}, {med_ell}, {med_bkg}, "
                             f"{row[DO_DARK_NAME]}, {row[DO_FLAT_NAME]}, {row[DO_ASTROMETRY_NAME]}, "
-                            f"{row[TROUBLES_NAME]}) WHERE {ID} = {row[ID]}")
+                            f"{row[DO_SEX_NAME]}, {row[TROUBLES_NAME]}) WHERE {ID} = {row[ID]}")
                 with eng.begin() as conn:     # TRANSACTION
                     conn.execute(text(q_update))
             # con.execute(q_update)
