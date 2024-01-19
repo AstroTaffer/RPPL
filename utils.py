@@ -60,6 +60,9 @@ def do_sex(input_file):
         return 0, 0, 0, ''
     tbl = ascii.read(output_file)
     indx = np.where((tbl['FWHM_IMAGE'] < 20) & (tbl['FWHM_IMAGE'] > 0.5))[0]
+    if len(indx) == 0:
+        print('Can\t find stars')
+        return 0, 0, 0, ''
     med_fwhm = np.round(np.median(tbl['FWHM_IMAGE'][indx]), 2)
     med_ell = np.round(np.median(tbl['ELLIPTICITY'][indx]), 2)
     med_bkg = np.round(np.median(tbl['BACKGROUND'][indx]), 2)

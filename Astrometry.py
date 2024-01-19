@@ -125,7 +125,7 @@ class DoAstrometry:
             wcs_header = self.ast.solve_from_source_list(Sources['xcentroid'],
                                                          Sources['ycentroid'],
                                                          image_width, image_height,
-                                                         solve_timeout=120,
+                                                         solve_timeout=30,
                                                          center_ra=C.ra.degree,
                                                          center_dec=C.dec.degree,
                                                          radius=0.25,

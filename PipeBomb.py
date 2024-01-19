@@ -43,7 +43,7 @@ def sisyphus():
              "frame_filter, date_utc, ccd_temp, is_do_dark, is_do_flat, is_do_astrometry, is_do_sex, trouble_count "
              "FROM robophot_frames, robophot_tasks "
              "WHERE fk_task_id = task_id AND (frame_type = 'Object') AND "
-             "(NOT is_do_dark OR NOT is_do_flat OR NOT is_do_astrometry OR NOT is_do_sex OR NOT trouble_count > 3) "
+             "(NOT is_do_dark OR NOT is_do_flat OR NOT is_do_astrometry OR NOT is_do_sex) AND trouble_count < 3 "
              "ORDER BY (CASE "
              "WHEN frame_filter = 'i' THEN 1 "
              "WHEN frame_filter = 'r' THEN 2 "
