@@ -59,7 +59,7 @@ def do_sex(input_file):
         print('Error')
         return 0, 0, 0, ''
     tbl = ascii.read(output_file)
-    indx = np.where((tbl['FWHM_IMAGE'] < 20) & (tbl['FWHM_IMAGE'] > 0.5))[0]
+    indx = np.where((tbl['FWHM_IMAGE'] < 50) & (tbl['FWHM_IMAGE'] > 0.5))[0]
     if len(indx) == 0:
         print('Can\t find stars')
         return 0, 0, 0, ''

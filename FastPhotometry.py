@@ -17,11 +17,11 @@ from Photometry_Utils import *
 
 
 def Core(path2data, do_wcs=False):
-    Cat_R = 0.1  # catalog each cone radius
+    Cat_R = 10  # catalog each cone radius
     Cat_len = 400  # catalog max length
     V_lim = 15  # catalog max depth
     Bbox = 9  # centering/morphology box half-size (pixels)
-    Raper = 5
+    Raper = 10  
 
     # read directory and create list of fits-files
     file_list = []
@@ -92,6 +92,8 @@ def Core(path2data, do_wcs=False):
 
         X, Y = w.all_world2pix(Catalog['Ra'], Catalog['Dec'], 0)
         Catalog.add_columns([X, Y], names=['X', 'Y'])
+        indx = np.where((Catalog['X'] < 2048/Header['XBINNING']) & (Catalog['Y'] < 2048/Header['YBINNING']))[0]
+        Catalog = Catalog[indx]
 
         # delete background
         sigmaclip = SigmaClip(sigma=3.)
@@ -106,7 +108,8 @@ def Core(path2data, do_wcs=False):
         try:
             Catalog_COM = get_com(Data_without_background, Catalog, Bbox)  # center of mass / fast and better!
             #     Catalog = get_1dg(Data, Catalog, Bbox) # Gauss 1d fit
-        except:
+        except Exception as ex:
+            print(ex)
             Catalog.remove_columns(names=('X', 'Y'))
             continue
 
@@ -267,10 +270,9 @@ def Plot_Curve(path2phot, objname, date, filter):
     shift_fig.savefig(rf'{path2phot}\plot_shifts.pdf')
 
 
-Core(r'D:\RoboPhotData\Images\2023-11-07_GPX-TF16E-48\DO_BOTH\i', True)
-Core(r'D:\RoboPhotData\Images\2023-11-07_GPX-TF16E-48\DO_BOTH\r', True)
-Core(r'D:\RoboPhotData\Images\2023-11-09_GPX-TF16E-48\DO_BOTH\i', True)
-Core(r'D:\RoboPhotData\Images\2023-11-09_GPX-TF16E-48\DO_BOTH\r', True)
+Core(r'D:\2024\2024-01-25\GPX-TF16E-48\CALIBRATED\i', False)
+# Core(r'D:\2024\2024-01-22\GPX-TF16E-48\CALIBRATED\r', True)
+# Core(r'D:\2023\2023-12-13\GPX-TF16E-48\CALIBRATED\r', False)
 # Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\i\Photometry',
 #            'GSC2314–0530', '2023-09-06', 'i')
 # Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\r\Photometry',

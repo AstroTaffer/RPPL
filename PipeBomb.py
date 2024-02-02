@@ -28,7 +28,7 @@ delta_temp = 1
 def sisyphus():
     # timer.cancel()
 
-    print(f'New sisyphus tic at {Time.now()}')
+    print(f'\nNew sisyphus tic at {Time.now()}')
     # read bd
 
     # if not eng:
@@ -38,17 +38,32 @@ def sisyphus():
     eng = utils.connect_to_db()
     # con = eng.connect()
     print('Connected to robophot db')
+
+    query_for_current_task = ("SELECT frame_id, frame_path, calibration_frame_path, coord2000, "
+                              "frame_filter, date_utc, ccd_temp, is_do_dark, is_do_flat, is_do_astrometry, "
+                              "is_do_sex, trouble_count "
+                              "FROM robophot_frames, robophot_tasks "
+                              "WHERE fk_task_id = task_id AND (frame_type = 'Object' OR frame_type = 'Test') AND "
+                              "status = 1 AND "
+                              "(NOT is_do_dark OR NOT is_do_flat OR NOT is_do_astrometry OR NOT is_do_sex) AND "
+                              "trouble_count < 3 "
+                              "ORDER BY (CASE "
+                              "WHEN frame_filter = 'i' THEN 1 "
+                              "WHEN frame_filter = 'r' THEN 2 "
+                              "WHEN frame_filter = 'g' THEN 3 END), frame_id")
+    table = pd.read_sql_query(query_for_current_task, eng)
     # query = "SELECT get_frames_for_cal() FROM robophot_frames"
-    query = ("SELECT frame_id, frame_path, calibration_frame_path, coord2000, "
-             "frame_filter, date_utc, ccd_temp, is_do_dark, is_do_flat, is_do_astrometry, is_do_sex, trouble_count "
-             "FROM robophot_frames, robophot_tasks "
-             "WHERE fk_task_id = task_id AND (frame_type = 'Object') AND "
-             "(NOT is_do_dark OR NOT is_do_flat OR NOT is_do_astrometry OR NOT is_do_sex) AND trouble_count < 3 "
-             "ORDER BY (CASE "
-             "WHEN frame_filter = 'i' THEN 1 "
-             "WHEN frame_filter = 'r' THEN 2 "
-             "WHEN frame_filter = 'g' THEN 3 END), frame_id")
-    table = pd.read_sql_query(query, eng)
+    if table.shape[0] == 0:
+        query = ("SELECT frame_id, frame_path, calibration_frame_path, coord2000, "
+                 "frame_filter, date_utc, ccd_temp, is_do_dark, is_do_flat, is_do_astrometry, is_do_sex, trouble_count "
+                 "FROM robophot_frames, robophot_tasks "
+                 "WHERE fk_task_id = task_id AND (frame_type = 'Object' OR frame_type = 'Test') AND "
+                 "(NOT is_do_dark OR NOT is_do_flat OR NOT is_do_astrometry OR NOT is_do_sex) AND trouble_count < 3 "
+                 "ORDER BY (CASE "
+                 "WHEN frame_filter = 'i' THEN 1 "
+                 "WHEN frame_filter = 'r' THEN 2 "
+                 "WHEN frame_filter = 'g' THEN 3 END), frame_id")
+        table = pd.read_sql_query(query, eng)
 
     # apply calibration
     if table.shape[0] > 0:
@@ -61,11 +76,13 @@ def sisyphus():
             med_bkg = 0
             med_zeropoi = 0
             sex_path = ''
+            dark_id = 0
+            flat_id = 0
             # print("*"*42)
             # print(f"Calibration: working on frame #{row[ID]}")
             if not row[DO_DARK_NAME]:
                 # q_get_for_do_dark = f"SELECT get_m_dark_frames({row[ID]}, {delta_temp})"
-                q_get_for_do_dark = (f"SELECT m_frame_path FROM "
+                q_get_for_do_dark = (f"SELECT m_frame_id, m_frame_path FROM "
                                      f"robophot_master_frames, robophot_frames, robophot_tasks "
                                      f"WHERE {row[ID]} = frame_id AND robophot_frames.fk_task_id = task_id AND "
                                      f"m_frame_type = 'm_Dark' AND m_frame_path IS NOT NULL AND     "
@@ -77,6 +94,7 @@ def sisyphus():
                 for d_index, dark in darks_table.iterrows():
                     if apply_dark(row[PATH_NAME], dark['m_frame_path'], row[CAL_PATH_NAME]):
                         row[DO_DARK_NAME] = True
+                        dark_id = dark['m_frame_id']
                         print(f'Dark applied to frame #{row[ID]}, path to cal {row[CAL_PATH_NAME]}')
                         break
                     else:
@@ -88,7 +106,7 @@ def sisyphus():
             if row[DO_DARK_NAME] and not row[DO_FLAT_NAME]:
                 # q_get_for_do_flat = f"SELECT get_m_flat_frames({row[ID]})"
                 q_get_for_do_flat = (
-                    f"SELECT m_frame_path FROM robophot_master_frames, robophot_frames, robophot_tasks "
+                    f"SELECT m_frame_id, m_frame_path FROM robophot_master_frames, robophot_frames, robophot_tasks "
                     f"WHERE {row[ID]} = frame_id AND robophot_frames.fk_task_id = task_id AND "
                     f"m_frame_type = 'm_Flat' AND m_frame_path IS NOT NULL AND "
                     f"m_frame_filter = frame_filter AND "
@@ -99,6 +117,7 @@ def sisyphus():
                 for f_indx, flat in flats_table.iterrows():
                     if apply_flat(row[PATH_NAME], flat['m_frame_path'], row[CAL_PATH_NAME]):
                         row[DO_FLAT_NAME] = True
+                        flat_id = flat['m_frame_id']
                         print(f'Flat applied to frame #{row[ID]}, path {row[CAL_PATH_NAME]}')
                         break
                     else:
@@ -116,7 +135,7 @@ def sisyphus():
                     row[TROUBLES_NAME] += 1
                     print(f"Can\'t make WCS on frame #{row[ID]}, path {row[CAL_PATH_NAME]}")
                 done_cal += 1
-            if row[DO_DARK_NAME] and row[DO_FLAT_NAME] and row[DO_ASTROMETRY_NAME] and not row[DO_SEX_NAME]:
+            if row[DO_DARK_NAME] and row[DO_FLAT_NAME] and not row[DO_SEX_NAME]:
                 med_fwhm, med_ell, med_bkg, sex_path = utils.do_sex(row[CAL_PATH_NAME])
                 if med_fwhm > 0:
                     print('Made sex')
@@ -127,9 +146,13 @@ def sisyphus():
                 done_cal += 1
             # update
             if done_cal > 0:
-                q_update = (f"UPDATE robophot_frames SET (sex_path, sex_fwhm, sex_ell, sex_background, "
-                            f"{DO_DARK_NAME}, {DO_FLAT_NAME}, {DO_ASTROMETRY_NAME}, {DO_SEX_NAME}, "
-                            f"{TROUBLES_NAME}) = ('{sex_path}', {med_fwhm}, {med_ell}, {med_bkg}, "
+                q_update = (f"UPDATE robophot_frames SET ({'fk_master_dark_id, ' if dark_id > 0 else ''}"
+                            f"{'fk_master_flat_id, ' if dark_id > 0 else ''}"
+                            f"sex_path, sex_fwhm, sex_ell, sex_background, "
+                            f"{DO_DARK_NAME}, {DO_FLAT_NAME}, {DO_ASTROMETRY_NAME}, {DO_SEX_NAME}, {TROUBLES_NAME}) = "
+                            f"({str(dark_id) + ', ' if dark_id > 0  else ''}"
+                            f"{str(flat_id) + ', ' if flat_id > 0 else ''} "
+                            f"'{sex_path}', {med_fwhm}, {med_ell}, {med_bkg}, "
                             f"{row[DO_DARK_NAME]}, {row[DO_FLAT_NAME]}, {row[DO_ASTROMETRY_NAME]}, "
                             f"{row[DO_SEX_NAME]}, {row[TROUBLES_NAME]}) WHERE {ID} = {row[ID]}")
                 with eng.begin() as conn:     # TRANSACTION
@@ -143,7 +166,7 @@ def sisyphus():
     q_get_m_dark_frame = ("SELECT m_frame_id, m_frame_type, "
                           "m_camera_sn, m_x_bin, m_y_bin, m_exp_time FROM "
                           "robophot_master_frames WHERE "
-                          "date_make_utc IS NULL AND m_frame_type = 'm_Dark'")
+                          "date_make_utc IS NULL AND m_frame_type = 'm_Dark' AND m_trouble = 0")
     m_darks = pd.read_sql_query(q_get_m_dark_frame, eng)
     print(f'Start make master darks, there is {m_darks.shape[0]} darks to create')
     '''
@@ -162,8 +185,16 @@ def sisyphus():
                                f"fk_task_id = task_id AND  "
                                f"{m_dark['m_x_bin']} = x_bin AND {m_dark['m_y_bin']} = y_bin AND "
                                f"'{m_dark['m_camera_sn']}' = camera_sn AND {m_dark['m_exp_time']} = exp_time AND "
-                               f"(now() - date_utc) < '1 MONTH'::interval")
+                               f"(now() - date_utc) < '2 DAY'::interval")
         mean_ccd_temp = pd.read_sql_query(q_get_mean_ccd_temp, eng)['round'][0]
+        set_m_trouble = ("UPDATE robophot_master_frames SET "
+                         "m_trouble = 1 WHERE "
+                         f"m_frame_id = {m_dark['m_frame_id']}")
+        if mean_ccd_temp is None:
+            print("mean_ccd_temp is None")
+            with eng.begin() as conn:     # TRANSACTION
+                conn.execute(text(set_m_trouble))
+            continue
         q_get_darks_for_m = (f"SELECT frame_path FROM "
                              f"robophot_frames, robophot_tasks "
                              f"WHERE frame_type = 'Dark' AND "
@@ -171,7 +202,7 @@ def sisyphus():
                              f"{m_dark['m_x_bin']} = x_bin AND {m_dark['m_y_bin']} = y_bin AND "
                              f"'{m_dark['m_camera_sn']}' = camera_sn AND {m_dark['m_exp_time']} = exp_time AND "
                              f"abs(({mean_ccd_temp} - robophot_frames.ccd_temp)::numeric) < {delta_temp} AND "
-                             f"(now() - date_utc) < '1 MONTH'::interval")
+                             f"(now() - date_utc) < '2 DAY'::interval")
         '''
         - Оставляешь только те кадры, где CCD-TEMP
         отличается по модулю от mean_ccd_temp
@@ -185,6 +216,8 @@ def sisyphus():
         '''
         if darks_for_master.shape[0] < 5:
             print("Too few frames to make master dark")
+            with eng.begin() as conn:     # TRANSACTION
+                conn.execute(text(set_m_trouble))
             continue
         date_made = Time.now().to_value(format='fits')
         path = DARK_ROOT + f'{m_dark["m_exp_time"]}_{mean_ccd_temp}.fits.gz'
@@ -225,7 +258,7 @@ def sisyphus():
                                    f"fk_task_id = task_id AND "
                                    f"{m_flat['m_x_bin']} = x_bin AND {m_flat['m_y_bin']} = y_bin AND "
                                    f"'{m_flat['m_camera_sn']}' = camera_sn AND {m_flat['m_exp_time']} = exp_time AND "
-                                   f"(now() - date_utc) < '1 MONTH'::interval")
+                                   f"(now() - date_utc) < '2 DAY'::interval")
             mean_ccd_temp = pd.read_sql_query(q_get_mean_ccd_temp, eng)['round'][0]
             q_get_flats_for_m = (f"SELECT frame_path FROM "
                                  f"robophot_frames, robophot_tasks "
@@ -235,7 +268,7 @@ def sisyphus():
                                  f"{m_flat['m_x_bin']} = x_bin AND {m_flat['m_y_bin']} = y_bin AND "
                                  f"'{m_flat['m_camera_sn']}' = camera_sn AND {m_flat['m_exp_time']} = exp_time AND "
                                  f"abs(({mean_ccd_temp} - robophot_frames.ccd_temp)::numeric) < {delta_temp} AND "
-                                 f"(now() - date_utc) < '1 MONTH'::interval")
+                                 f"(now() - date_utc) < '2 DAY'::interval")
             '''
             - Оставляешь только те кадры, где CCD-TEMP
             отличается по модулю от mean_ccd_temp
@@ -250,7 +283,7 @@ def sisyphus():
                                          f"'{m_flat['m_camera_sn']}' = m_camera_sn "
                                          f"AND {m_flat['m_exp_time']} = m_exp_time AND "
                                          f"abs(({mean_ccd_temp} - ccd_temp_mean)::numeric) < {delta_temp} AND "
-                                         f"(now() - date_make_utc) < '1 MONTH'::interval")
+                                         f"(now() - date_make_utc) < '2 DAY'::interval")
             m_darks_for_flat = pd.read_sql_query(q_get_m_dark_to_make_flat, eng)
             '''
             - Если после этого в наборе осталось меньше 

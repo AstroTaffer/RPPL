@@ -34,7 +34,7 @@ def Get_GAIA(RA, DEC, R, V_lim, Cat_len):
                         'RPmag', 'e_RPmag', "+_r"],
                column_filters={'BPmag': '>0', 'BPmag': '<' + str(V_lim)})
     V.ROW_LIMIT = Cat_len
-    Vizier_result = V.query_region(c, radius=Angle(R * u.deg), catalog=['I/350/gaiaedr3'])  # 'I/345'
+    Vizier_result = V.query_region(c, radius=Angle(R * u.arcmin), catalog=['I/350/gaiaedr3'])  # 'I/345'
     if len(Vizier_result) != 0:
         Vizier_stars = Vizier_result[0]
         #         print(Vizier_stars.info())
