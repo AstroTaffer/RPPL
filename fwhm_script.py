@@ -47,6 +47,7 @@ def sex(input_file):
     # med_ell = np.round(np.median(tbl['ELLIPTICITY'][indx]), 2)
     # med_bkg = np.round(np.median(tbl['BACKGROUND'][indx]), 2)
     # med_zeropoi = np.round(np.median(tbl['ZEROPOI']), 2)
+    os.remove(output_file)
     return med_fwhm
 
 
