@@ -74,8 +74,8 @@ def sisyphus():
             med_fwhm = 0
             med_ell = 0
             med_bkg = 0
-            med_zeropoi = 0
-            sex_path = ''
+            # med_zeropoi = 0
+            # sex_path = ''
             dark_id = 0
             flat_id = 0
             # print("*"*42)
@@ -136,7 +136,8 @@ def sisyphus():
                     print(f"Can\'t make WCS on frame #{row[ID]}, path {row[CAL_PATH_NAME]}")
                 done_cal += 1
             if row[DO_DARK_NAME] and row[DO_FLAT_NAME] and not row[DO_SEX_NAME]:
-                med_fwhm, med_ell, med_bkg, sex_path = utils.do_sex(row[CAL_PATH_NAME])
+                # med_fwhm, med_ell, med_bkg, sex_path = utils.do_sex(row[CAL_PATH_NAME])
+                med_fwhm, med_ell, med_bkg = utils.get_fwhm_data(row[CAL_PATH_NAME])
                 if med_fwhm > 0:
                     print('Made sex')
                     row[DO_SEX_NAME] = True
@@ -148,11 +149,11 @@ def sisyphus():
             if done_cal > 0:
                 q_update = (f"UPDATE robophot_frames SET ({'fk_master_dark_id, ' if dark_id > 0 else ''}"
                             f"{'fk_master_flat_id, ' if dark_id > 0 else ''}"
-                            f"sex_path, sex_fwhm, sex_ell, sex_background, "
+                            f"sex_fwhm, sex_ell, sex_background, "
                             f"{DO_DARK_NAME}, {DO_FLAT_NAME}, {DO_ASTROMETRY_NAME}, {DO_SEX_NAME}, {TROUBLES_NAME}) = "
                             f"({str(dark_id) + ', ' if dark_id > 0  else ''}"
                             f"{str(flat_id) + ', ' if flat_id > 0 else ''} "
-                            f"'{sex_path}', {med_fwhm}, {med_ell}, {med_bkg}, "
+                            f"{med_fwhm}, {med_ell}, {med_bkg}, "
                             f"{row[DO_DARK_NAME]}, {row[DO_FLAT_NAME]}, {row[DO_ASTROMETRY_NAME]}, "
                             f"{row[DO_SEX_NAME]}, {row[TROUBLES_NAME]}) WHERE {ID} = {row[ID]}")
                 with eng.begin() as conn:     # TRANSACTION

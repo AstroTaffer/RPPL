@@ -1,9 +1,6 @@
 import json
 from os.path import exists
 import os
-import subprocess
-import numpy as np
-from astropy.io import ascii
 from sqlalchemy import create_engine
 from sqlalchemy import URL
 import astropy.io.fits as fits
@@ -35,39 +32,49 @@ def restore_default_config():
         json.dump(settings, confile, indent=4)
 
 
-def do_sex(input_file):
-    cwd = 'C:\\'
-    # cwd = os.getcwd() + '\\'
-    Sex = cwd + 'Sex\Extract.exe '
-    dSex = ' -c ' + cwd + 'Sex\pipeline.sex'
-    dPar = ' -PARAMETERS_NAME ' + cwd + 'Sex\pipeline.par'
-    dFilt = ' -FILTER_NAME ' + cwd + r'Sex\tophat_2.5_3x3.conv'
-    NNW = ' -STARNNW_NAME ' + cwd + 'Sex\default.nnw'
-    
-    output_file = ".".join(input_file.split('.')[:-1]) + '.cat'
-    # output_file = input_file.replace('fits.gz', 'cat')
+# def do_sex(input_file):
+#     cwd = 'C:\\'
+#     # cwd = os.getcwd() + '\\'
+#     Sex = cwd + 'Sex\Extract.exe '
+#     dSex = ' -c ' + cwd + 'Sex\pipeline.sex'
+#     dPar = ' -PARAMETERS_NAME ' + cwd + 'Sex\pipeline.par'
+#     dFilt = ' -FILTER_NAME ' + cwd + r'Sex\tophat_2.5_3x3.conv'
+#     NNW = ' -STARNNW_NAME ' + cwd + 'Sex\default.nnw'
+#
+#     output_file = ".".join(input_file.split('.')[:-1]) + '.cat'
+#     # output_file = input_file.replace('fits.gz', 'cat')
+#
+#     shell = Sex + "\"" + input_file + "\"" + dSex + dPar + dFilt + NNW + ' -CATALOG_NAME ' + "\"" + output_file + "\""
+#     print(shell)
+#     startupinfo = subprocess.STARTUPINFO()
+#     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+#     child = subprocess.run(shell, timeout=60, startupinfo=startupinfo)
+#
+#     if child.returncode == 0 and os.path.isfile(output_file):
+#         print('Ok')
+#     else:
+#         print('Error')
+#         return 0, 0, 0, ''
+#     tbl = ascii.read(output_file)
+#     indx = np.where((tbl['FWHM_IMAGE'] < 50) & (tbl['FWHM_IMAGE'] > 0.5))[0]
+#     if len(indx) == 0:
+#         print('Can\t find stars')
+#         return 0, 0, 0, ''
+#     med_fwhm = np.round(np.median(tbl['FWHM_IMAGE'][indx]), 2)
+#     med_ell = np.round(np.median(tbl['ELLIPTICITY'][indx]), 2)
+#     med_bkg = np.round(np.median(tbl['BACKGROUND'][indx]), 2)
+#     # med_zeropoi = np.round(np.median(tbl['ZEROPOI']), 2)
+#     return med_fwhm, med_ell, med_bkg, output_file
 
-    shell = Sex + "\"" + input_file + "\"" + dSex + dPar + dFilt + NNW + ' -CATALOG_NAME ' + "\"" + output_file + "\""
-    print(shell)
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    child = subprocess.run(shell, timeout=60, startupinfo=startupinfo)
 
-    if child.returncode == 0 and os.path.isfile(output_file):
-        print('Ok')
-    else:
-        print('Error')
-        return 0, 0, 0, ''
-    tbl = ascii.read(output_file)
-    indx = np.where((tbl['FWHM_IMAGE'] < 50) & (tbl['FWHM_IMAGE'] > 0.5))[0]
-    if len(indx) == 0:
-        print('Can\t find stars')
-        return 0, 0, 0, ''
-    med_fwhm = np.round(np.median(tbl['FWHM_IMAGE'][indx]), 2)
-    med_ell = np.round(np.median(tbl['ELLIPTICITY'][indx]), 2)
-    med_bkg = np.round(np.median(tbl['BACKGROUND'][indx]), 2)
-    # med_zeropoi = np.round(np.median(tbl['ZEROPOI']), 2)
-    return med_fwhm, med_ell, med_bkg, output_file
+def get_fwhm_data(input_file):
+    with fits.open(input_file, memmap=False) as hdulist:
+        h = hdulist[0].header
+        fwhm = h['FWHM']
+        ell = h['ELL']
+        nstars = h['NSTARS']
+        bkg = h['BKG']
+    return fwhm, ell, nstars, bkg
 
 
 def connect_to_db():
