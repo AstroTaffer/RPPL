@@ -237,7 +237,7 @@ def sisyphus():
     # make flat
     q_get_m_flat_frame = ("SELECT m_frame_id, m_frame_type, m_frame_filter, "
                           "m_camera_sn, m_x_bin, m_y_bin, m_exp_time, m_trouble FROM robophot_master_frames WHERE "
-                          "date_make_utc IS NULL AND m_frame_type = 'm_Flat'")
+                          "date_make_utc IS NULL AND m_frame_type = 'm_Flat' AND m_trouble = 0")
     m_flats = pd.read_sql_query(q_get_m_flat_frame, eng)
     print(f'Start make master flats, there is {m_flats.shape[0]} flats to create')
     if m_flats.shape[0] != 0:
