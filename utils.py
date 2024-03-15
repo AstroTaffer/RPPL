@@ -68,14 +68,16 @@ def restore_default_config():
 
 
 def get_fwhm_data(input_file):
-    with fits.open(input_file, memmap=False) as hdulist:
-        h = hdulist[0].header
-        fwhm = h['FWHM']
-        ell = h['ELL']
-        nstars = h['NSTARS']
-        bkg = h['BKG']
-    return fwhm, ell, nstars, bkg
-
+    try:
+        with fits.open(input_file, memmap=False) as hdulist:
+            h = hdulist[0].header
+            fwhm = h['FWHM']
+            ell = h['ELL']
+            # nstars = h['NSTARS']
+            bkg = h['BKG']
+        return fwhm, ell, bkg
+    except:
+        return 0, 0, 0
 
 def connect_to_db():
     # DB params

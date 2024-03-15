@@ -236,7 +236,7 @@ def sisyphus():
 
     # make flat
     q_get_m_flat_frame = ("SELECT m_frame_id, m_frame_type, m_frame_filter, "
-                          "m_camera_sn, m_x_bin, m_y_bin, m_exp_time FROM robophot_master_frames WHERE "
+                          "m_camera_sn, m_x_bin, m_y_bin, m_exp_time, m_trouble FROM robophot_master_frames WHERE "
                           "date_make_utc IS NULL AND m_frame_type = 'm_Flat'")
     m_flats = pd.read_sql_query(q_get_m_flat_frame, eng)
     print(f'Start make master flats, there is {m_flats.shape[0]} flats to create')
@@ -261,6 +261,14 @@ def sisyphus():
                                    f"'{m_flat['m_camera_sn']}' = camera_sn AND {m_flat['m_exp_time']} = exp_time AND "
                                    f"(now() - date_utc) < '2 DAY'::interval")
             mean_ccd_temp = pd.read_sql_query(q_get_mean_ccd_temp, eng)['round'][0]
+            set_m_trouble = ("UPDATE robophot_master_frames SET "
+                             "m_trouble = 1 WHERE "
+                             f"m_frame_id = {m_flat['m_frame_id']}")
+            if mean_ccd_temp is None:
+                print("mean_ccd_temp is None")
+                with eng.begin() as conn:     # TRANSACTION
+                    conn.execute(text(set_m_trouble))
+                continue
             q_get_flats_for_m = (f"SELECT frame_path FROM "
                                  f"robophot_frames, robophot_tasks "
                                  f"WHERE frame_type = 'Flat' AND "
@@ -276,7 +284,6 @@ def sisyphus():
             не более чем на epsilon_temp
             '''
             flats_for_master = pd.read_sql_query(q_get_flats_for_m, eng)
-    
             q_get_m_dark_to_make_flat = (f"SELECT m_frame_path FROM "
                                          f"robophot_master_frames "
                                          f"WHERE m_frame_type = 'm_Dark' AND "
