@@ -170,7 +170,7 @@ def Plot_Curve(path2phot, objname, date, filter):
     # Condition_Report(objname, time, filter, path2phot)
 
     # tar_Flux = Flux_Corr[:, 0]
-    m = -2.5 * np.log10(Flux_Corr)
+    m = -2.5 * np.log10(Flux_Corr) + 2.5 * np.log10(time['EXPTIME'])
     s = np.nanstd(m, axis=0)
     err = np.round(np.sqrt(flux[:, 0] + 3.14 * 5 ** 2 * (time['Sky'])) / (flux[:, 0]), 5)
     ZERO = int(np.max(time['JD']))
@@ -270,7 +270,7 @@ def Plot_Curve(path2phot, objname, date, filter):
     shift_fig.savefig(rf'{path2phot}\plot_shifts.pdf')
 
 
-Core(r'D:\2024\2024-01-25\GPX-TF16E-48\CALIBRATED\i', False)
+Core(r'E:\GPX-TF16E-48\robophot\2024-03-06\i', False)
 # Core(r'D:\2024\2024-01-22\GPX-TF16E-48\CALIBRATED\r', True)
 # Core(r'D:\2023\2023-12-13\GPX-TF16E-48\CALIBRATED\r', False)
 # Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\i\Photometry',

@@ -88,8 +88,8 @@ def GetTrend(Flux, Cat):
 def DrawMap(Image, Size, Header, Cat, Name, RAper):
     wcs = WCS(Header)
     Image = np.log10(Image)
-    X = Image.shape[1]
-    Y = Image.shape[0]
+    X = Image.shape[1] / 2
+    Y = Image.shape[0] / 2
     _mean, _median, _std = sigma_clipped_stats(Image[Y - 50:Y + 50, X - 50:X + 50])
     _max = _median + 10. * _std
     _min = _median - 1. * _std

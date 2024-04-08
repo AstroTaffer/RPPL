@@ -1,5 +1,3 @@
-import os.path
-
 import numpy as np
 import astropy.io.fits as fits
 from astropy.stats import sigma_clip
@@ -12,7 +10,7 @@ def apply_dark(raw_frame_fp, mdark_frame_fp, out_frame_fp):
         raw_frame_header, raw_frame_data = read_fits_file(raw_frame_fp)
         mdark_frame_data = read_fits_file(mdark_frame_fp)[1]
 
-        raw_frame_data = raw_frame_data.astype(np.float32) - mdark_frame_data
+        raw_frame_data = raw_frame_data - mdark_frame_data
 
         raw_frame_data = np.round(raw_frame_data).astype(np.uint16)
         raw_frame_header["BITPIX"] = (16, "bits per data value")
@@ -33,7 +31,7 @@ def apply_flat(raw_frame_fp, mflat_frame_fp, out_frame_fp):
         raw_frame_header, raw_frame_data = read_fits_file(raw_frame_fp)
         mflat_frame_data = read_fits_file(mflat_frame_fp)[1]
 
-        raw_frame_data = raw_frame_data.astype(np.float32) / mflat_frame_data
+        raw_frame_data = raw_frame_data / mflat_frame_data
 
         raw_frame_data = np.round(raw_frame_data).astype(np.uint16)
         raw_frame_header["BITPIX"] = (16, "bits per data value")

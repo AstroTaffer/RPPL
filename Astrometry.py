@@ -102,7 +102,7 @@ class DoAstrometry:
                 return True
             except:
                 pass
-            C = SkyCoord(f'{Header["ALPHA"]} {Header["DELTA"]}', unit=(u.hourangle, u.deg), frame='icrs')
+            C = SkyCoord(f'{Header["OBJRA"]} {Header["OBJDEC"]}', unit=(u.hourangle, u.deg), frame='icrs')
             Data = hdulist[0].data.copy()
             hdulist.verify('fix')
             hdulist.close()

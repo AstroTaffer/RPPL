@@ -79,6 +79,7 @@ def get_fwhm_data(input_file):
     except:
         return 0, 0, 0
 
+
 def connect_to_db():
     # DB params
     db_host = "192.168.240.5"
