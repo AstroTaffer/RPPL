@@ -47,6 +47,30 @@ def apply_flat(raw_frame_fp, mflat_frame_fp, out_frame_fp):
         return False
 
 
+# TODO: Use apply_both where possible
+def apply_both(raw_frame_fp, mdark_frame_fp, mflat_frame_fp, out_frame_fp):
+    try:
+        raw_frame_header, raw_frame_data = read_fits_file(raw_frame_fp)
+        mdark_frame_data = read_fits_file(mdark_frame_fp)[1]
+        mflat_frame_data = read_fits_file(mflat_frame_fp)[1]
+
+        raw_frame_data = (raw_frame_data - mdark_frame_data) / mflat_frame_data
+
+        raw_frame_data = np.round(raw_frame_data).astype(np.uint16)
+        raw_frame_header["BITPIX"] = (16, "bits per data value")
+        raw_frame_header["HISTORY"] = "CALIBRATED"
+
+        out_frame_hdu = fits.PrimaryHDU(raw_frame_data, raw_frame_header)
+        out_frame_hdul = fits.HDUList([out_frame_hdu])
+        make_out_path(out_frame_fp)
+        out_frame_hdul.writeto(out_frame_fp, overwrite=True)
+        return True
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        return False
+
+
+# FIXME: Photometric calibration makes "holes" in bright stars. Check master frames creation functiouns for issues.
 def make_master_dark(dark_frames_fp, mean_ccd_temp, creation_date, out_frame_fp):
     try:
         buff_frame_hdr = read_fits_file(dark_frames_fp[0])[0]
