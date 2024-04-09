@@ -71,10 +71,12 @@ def get_fwhm_data(input_file):
     try:
         with fits.open(input_file, memmap=False) as hdulist:
             h = hdulist[0].header
-            fwhm = h['FWHM']
-            ell = h['ELL']
+            fwhm = float(h['FWHM'])
+            ell = float(h['ELL'])
             # nstars = h['NSTARS']
-            bkg = h['BKG']
+            bkg = float(h['BKG'])
+            if 'nan' in fwhm:
+                return 0, 0, 0
         return fwhm, ell, bkg
     except:
         return 0, 0, 0

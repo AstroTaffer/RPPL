@@ -11,6 +11,7 @@ from astropy.io import ascii
 from Astrometry import Astrometry
 from Photometry_Utils import *
 
+
 # '02:20:50.9 +33:20:46.6' GSC2314–0530
 # RA/Dec (J2000, epoch 2015.5): 20:00:16.06 +22:09:43.54 TIC 424112727
 # RA/Dec (J2000, epoch 2015.5): 21:07:55.93 +48:34:56.27 TIC 357872559
@@ -21,7 +22,7 @@ def Core(path2data, do_wcs=False):
     Cat_len = 400  # catalog max length
     V_lim = 15  # catalog max depth
     Bbox = 9  # centering/morphology box half-size (pixels)
-    Raper = 10  
+    Raper = 10
 
     # read directory and create list of fits-files
     file_list = []
@@ -57,7 +58,7 @@ def Core(path2data, do_wcs=False):
     # clean old photometry
     for f in os.listdir(Path2Save):
         if f.count('Phot'):
-            os.remove(Path2Save+'/'+f)
+            os.remove(Path2Save + '/' + f)
 
     print('Download GAIA')
     Catalog = Get_GAIA(C.ra.degree, C.dec.degree, Cat_R, V_lim, Cat_len)
@@ -92,7 +93,11 @@ def Core(path2data, do_wcs=False):
 
         X, Y = w.all_world2pix(Catalog['Ra'], Catalog['Dec'], 0)
         Catalog.add_columns([X, Y], names=['X', 'Y'])
-        indx = np.where((Catalog['X'] < 2048/Header['XBINNING']) & (Catalog['Y'] < 2048/Header['YBINNING']))[0]
+        indx = np.where((Catalog['X'] < 2048 / Header['XBINNING']) & (Catalog['Y'] < 2048 / Header['YBINNING']))[0]
+        if not indx[0]:
+            print('There is no object on the frame')
+            Catalog.remove_columns(names=('X', 'Y'))
+            continue
         Catalog = Catalog[indx]
 
         # delete background
@@ -182,7 +187,8 @@ def Plot_Curve(path2phot, objname, date, filter):
     left = 0.11
     pos = [left, 0.71, 0.85, 0.2]
     axs[0].set_position(pos)
-    axs[0].errorbar(t, m[:, 0], err, fmt='r.', label=r'1$\sigma$ errorbar, $\bar\sigma=$' + str(np.round(np.nanmean(err), 5)), markersize=3)
+    axs[0].errorbar(t, m[:, 0], err, fmt='r.',
+                    label=r'1$\sigma$ errorbar, $\bar\sigma=$' + str(np.round(np.nanmean(err), 5)), markersize=3)
     axs[0].legend(loc=0, fontsize=6)
     axs[0].set_ylabel('Instrumental mag', fontsize=6)
     axs[0].set_xlabel(f'JD - {ZERO}', fontsize=6)
@@ -226,7 +232,7 @@ def Plot_Curve(path2phot, objname, date, filter):
 
     pos = [left, 0.07, 0.85, 0.2]
     axs[2].set_position(pos)
-    axs[2].plot(time['JD']-ZERO, time['EXTINCT'], 'b.')
+    axs[2].plot(time['JD'] - ZERO, time['EXTINCT'], 'b.')
     axs[2].set_ylabel('extinction (mag)', fontsize=6)
     axs[2].set_xlabel(f'JD-{ZERO}', fontsize=6)
     axs[2].tick_params(axis='both', labelsize=6, direction='in')
@@ -270,7 +276,7 @@ def Plot_Curve(path2phot, objname, date, filter):
     shift_fig.savefig(rf'{path2phot}\plot_shifts.pdf')
 
 
-Core(r'E:\GPX-TF16E-48\robophot\2024-03-06\i', False)
+Core(r'D:\2024\2024-01-25\GPX-TF16E-48\CALIBRATED\i', False)
 # Core(r'D:\2024\2024-01-22\GPX-TF16E-48\CALIBRATED\r', True)
 # Core(r'D:\2023\2023-12-13\GPX-TF16E-48\CALIBRATED\r', False)
 # Plot_Curve(r'C:\Users\User\Desktop\Tempo\2023_09_06 GSC2314-0530\DO_BOTH\i\Photometry',
