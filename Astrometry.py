@@ -1,200 +1,43 @@
-import glob
 import os
 import subprocess
-
-import astropy.io.fits as fits
-import numpy as np
-from astropy.convolution import Gaussian2DKernel
-from astropy.convolution import convolve
 from astropy.coordinates import SkyCoord
-from astropy.stats import mad_std
-from astroquery.astrometry_net import AstrometryNet
-from photutils.detection import DAOStarFinder
+import astropy.io.fits as fits
 from astropy import units as u
 
 
-def Astrometry(path, files, C):
-    ast = AstrometryNet()
-    ast.api_key = 'hipfhzhlzygnlvix'
-    path2save = path + r'\AstrometryDone'
-    if not os.path.exists(path2save):
-        os.mkdir(path2save)
-    for count, item in enumerate(files):
-        try:
-            name = item.split('\\')[-1]
-            print(f"Astrometry ({count}/{len(files)}): working on {name}")
-            # read file, copy data and header
-            with fits.open(item, mode='update', memmap=False) as hdulist:
-                # hdulist = fits.open(item, 'update', memmap=False)
-                # del hdulist[0].header['COMMENT']
-                Header = hdulist[0].header
-                try:
-                    buf = Header['CD1_1']
-                    hdulist.close()
-                    # print('done')
-                    continue
-                except:
-                    pass
-                Data = hdulist[0].data.copy()
-                hdulist.verify('fix')
-                hdulist.close()
-                # gaussian convolution
-                kernel = Gaussian2DKernel(x_stddev=1)
-                Data = convolve(Data, kernel)
-                # extract background
-                Data -= np.median(Data)
-                Bkg_sigma = mad_std(Data)
-                # # mask bad row
-                # mask = np.zeros(Data.shape, dtype=bool)
-                # mask[90:110, 0:Data.shape[1]] = True
-                daofind = DAOStarFinder(fwhm=4.5, threshold=5. * Bkg_sigma, sharplo=0.25)
-                # Sources = daofind(Data, mask=mask)
-                Sources = daofind(Data)
-                # print(Sources.info)
-                # plt.imshow(Data, cmap=cm.Greys_r, aspect='equal',
-                #            norm=Normalize(vmin=-30, vmax=150), interpolation='nearest')
-                # plt.scatter(Sources['xcentroid'], Sources['ycentroid'], s=40, facecolors='none', edgecolors='r')
-                # plt.show()
-                # Sort sources in ascending order
-                Sources.sort('flux')
-                Sources.reverse()
-                # ast.show_allowed_settings()
-                image_width = Header['NAXIS2']
-                image_height = Header['NAXIS1']
-                # print(Sources)
-                wcs_header = ast.solve_from_source_list(Sources['xcentroid'],
-                                                        Sources['ycentroid'],
-                                                        image_width, image_height,
-                                                        solve_timeout=120,
-                                                        center_ra=C.ra.degree,
-                                                        center_dec=C.dec.degree,
-                                                        radius=0.25,
-                                                        downsample_factor=2,
-                                                        scale_lower=1.2,
-                                                        scale_upper=1.4,
-                                                        scale_units='arcsecperpix'
-                                                        )
-                # hdu = fits.PrimaryHDU(hdulist[0].data, Header + wcs_header)
-                hdulist[0].header = Header + wcs_header
-                # hdulist.close()
-                # hdu.writeto(path2save + '\\' + name, overwrite=True)
-                hdulist.writeto(item, overwrite=True)
-                print('done')
-        except Exception as e:
-            print(e)
-    return path
+def DoAss(file_name, depth=100, sigma=300):
+    hdulist = fits.open(file_name, 'update', memmap=False)
+    header = hdulist[0].header
+    binning = header['XBINNING']
+    try:
+        cord = SkyCoord(f'{header["OBJRA"]} {header["OBJDEC"]}', unit=(u.hourangle, u.deg), frame='icrs')
+    except:
+        cord = SkyCoord(f'{header["ALPHA"]} {header["DELTA"]}', unit=(u.hourangle, u.deg), frame='icrs')
 
-
-class DoAstrometry:
-
-    def __init__(self, key):
-        self.ast = AstrometryNet()
-        self.ast.api_key = key
-
-    def compute(self, input_path):
-        try:
-            # read file, copy data and header
-            hdulist = fits.open(input_path, 'update', memmap=False)
-            Header = hdulist[0].header
-            try:
-                buf = Header['CD1_1']
-                hdulist.close()
-                return True
-            except:
-                pass
-            C = SkyCoord(f'{Header["OBJRA"]} {Header["OBJDEC"]}', unit=(u.hourangle, u.deg), frame='icrs')
-            Data = hdulist[0].data.copy()
-            hdulist.verify('fix')
-            hdulist.close()
-            # gaussian convolution
-            kernel = Gaussian2DKernel(x_stddev=1)
-            Data = convolve(Data, kernel)
-            # extract background
-            Data -= np.median(Data)
-            Bkg_sigma = mad_std(Data)
-            # # mask bad row
-            # mask = np.zeros(Data.shape, dtype=bool)
-            # mask[90:110, 0:Data.shape[1]] = True
-            daofind = DAOStarFinder(fwhm=4.5, threshold=5. * Bkg_sigma, sharplo=0.25)
-            # Sources = daofind(Data, mask=mask)
-            Sources = daofind(Data)
-            # Sort sources in ascending order
-            Sources.sort('flux')
-            Sources.reverse()
-            # ast.show_allowed_settings()
-            image_width = Header['NAXIS2']
-            image_height = Header['NAXIS1']
-            # print(Sources)
-            wcs_header = self.ast.solve_from_source_list(Sources['xcentroid'],
-                                                         Sources['ycentroid'],
-                                                         image_width, image_height,
-                                                         solve_timeout=30,
-                                                         center_ra=C.ra.degree,
-                                                         center_dec=C.dec.degree,
-                                                         radius=0.25,
-                                                         downsample_factor=2,
-                                                         scale_lower=1.2,
-                                                         scale_upper=1.4,
-                                                         scale_units='arcsecperpix'
-                                                         )
-            hdulist[0].header = Header + wcs_header
-            hdulist.writeto(input_path, overwrite=True)
-            hdulist.close()
-            return True
-        except Exception as e:
-            print(e)
-            return False
-
-
-    # WCS_success, WCS_Name = Astrometry('/dev/shm/Proc_Temp.fits', \
-    #                                    Center_Ra, Center_Dec, 100, 300, 2, Header['XBINNING'])
-def DoAss(file_name, Ra, Dec, Depth, Sigma, sip, binning):
-    # success = False
-    New_name = file_name.replace('.fits', '_WCS.fits')
-
-    shell = r'C:\cygwin64\Cygwin.bat solve-field'
-    shell = shell + ' --ra '
-    shell = shell + str(Ra)
-    shell = shell + ' --dec '
-    shell = shell + str(Dec)
-    shell = shell + ' --downsample 2'
-    shell = shell + ' --radius 0.5'
-    shell = shell + ' --depth ' + str(Depth)
-    shell = shell + ' --sigma ' + str(Sigma)
-    shell = shell + ' --no-remove-lines --no-verify-uniformize --no-verify-dedup'
-    shell = shell + ' -L '
-    shell = shell + str(0.55*binning)
-    shell = shell + ' -H '
-    shell = shell + str(0.75*binning)
-    shell = shell + ' -u app -O -p -r '
-    if sip == 0:
-        shell = shell + '-T'
-    else:
-        shell = shell + '-t ' + str(int(sip))
-    shell = shell + ' -W none --no-verify --crpix-center -M none -R none -O -l 60'  #--guess-scale  --no-verify
-    shell = shell + ' -S none -B none -U xylist-indx.xyls -N '  # -i none
-    # shell = shell + ' -S none -B none --temp-axy -U xylist-indx.xyls -N none'  # -i none
-    shell = shell + '\"' + New_name + '\"'
-    shell = shell + ' ' + '\"' + file_name + '\"' + '\n'
+    shell = f'C:/Users/Администратор/AppData/Local/cygwin_ansvr/bin/mintty.exe /bin/bash -l solve-field --ra {cord.ra.deg} --dec {cord.dec.deg} --downsample 2 --radius 0.7 --depth {depth} --sigma {sigma} --no-remove-lines --overwrite --no-verify --no-verify-uniformize --no-verify-dedup -L {0.55 * binning} -H {0.75 * binning} -u app -O -p -r -t 2 -M none -R none -S none -P none -B none -U none -N none -l 60 \"/cygdrive/{file_name.replace(":", "")}\"'
     print(shell)
-    devnull = open(os.devnull, 'w')
-    # returncode = subprocess.call(shell, stdout=devnull, stderr=devnull, shell=True)
-    returncode = subprocess.check_output(shell, shell=True, stderr=devnull)
-
-    if returncode == 0 and os.path.isfile(New_name):
-        #         print('Astrometry: solved')
-        return True
-    else:
-        # clean tmp files
-        tmp_files = glob.glob('/tmp/tmp.*')
-        for f in tmp_files:
-            os.remove(f)
-    #         print ('Astrometry: error')
-
-    #     except:
-    #         print ('Astrometry: error')
-    #         pass
-    return False
+    try:
+        subprocess.check_output(shell, shell=True)
+        path = file_name.split('.')
+        wcs_path = '.'.join(path[:-1]) + '.wcs'
+        axy_path = '.'.join(path[:-1]) + '.axy'
+        with open(wcs_path) as f:
+            wcs = f.read()
+        if os.path.exists(wcs_path):
+            os.remove(wcs_path)
+        print('Astrometry: solved')
+        if os.path.exists(axy_path):
+            os.remove(axy_path)
+        wcs = wcs.split('HISTORY')[0]
+        header_wcs = fits.Header.fromstring(wcs)
+        hdulist[0].header = header + header_wcs
+    except Exception as e:
+        print('Astrometry: error')
+        print(e)
+        hdulist.close()
+        return False
+    hdulist.close()
+    return True
 
 
 """

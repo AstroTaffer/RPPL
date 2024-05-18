@@ -82,7 +82,7 @@ def make_master_dark(dark_frames_fp, mean_ccd_temp, creation_date, out_frame_fp)
 
         mdark_frame_data = np.nanmean(sigma_clip(dark_frames_data, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
 
-        del buff_frame_hdr["DATE-OBS"]
+        buff_frame_hdr["DATE-OBS"] = (buff_frame_hdr["DATE-OBS"], "date of first dark in series")
         # del buff_frame_hdr["ALPHA"]
         # del buff_frame_hdr["DELTA"]
         buff_frame_hdr["BITPIX"] = (-64, "bits per data value")
@@ -115,7 +115,7 @@ def make_master_flat(flat_frames_fp, mdark_frame_fp, mean_ccd_temp, creation_dat
 
         mflat_frame_data = np.nanmean(sigma_clip(flat_frames_data, sigma=3, maxiters=5, masked=False, axis=0), axis=0)
 
-        del buff_frame_hdr["DATE-OBS"]
+        buff_frame_hdr["DATE-OBS"] = (buff_frame_hdr["DATE-OBS"], "date of first flat in series")
         del buff_frame_hdr["ALPHA"]
         del buff_frame_hdr["DELTA"]
         buff_frame_hdr["BITPIX"] = (-64, "bits per data value")

@@ -34,6 +34,7 @@ def sex(input_file):
         print('Error')
         return 0, 0, 0, ''
     tbl = ascii.read(output_file)
+    os.remove(output_file)
     # indx = np.where((tbl['FWHM_IMAGE'] < 50) & (tbl['FWHM_IMAGE'] > 1))[0]
     indx = np.where((tbl['FWHM_IMAGE'] > 1) & (tbl['FLUX_ISOCOR']/tbl['FLUXERR_ISOCOR'] > 15) &
                     (tbl['FLUX_ISOCOR']/tbl['FLUXERR_ISOCOR'] < 1000) & (tbl['FLAGS'] == 0))[0]
@@ -47,7 +48,7 @@ def sex(input_file):
     # med_ell = np.round(np.median(tbl['ELLIPTICITY'][indx]), 2)
     # med_bkg = np.round(np.median(tbl['BACKGROUND'][indx]), 2)
     # med_zeropoi = np.round(np.median(tbl['ZEROPOI']), 2)
-    os.remove(output_file)
+
     return med_fwhm
 
 
