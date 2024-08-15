@@ -12,8 +12,11 @@ def DoAss(file_name, depth=100, sigma=300):
     try:
         cord = SkyCoord(f'{header["OBJRA"]} {header["OBJDEC"]}', unit=(u.hourangle, u.deg), frame='icrs')
     except:
-        cord = SkyCoord(f'{header["ALPHA"]} {header["DELTA"]}', unit=(u.hourangle, u.deg), frame='icrs')
-
+        try:
+            cord = SkyCoord(f'{header["ALPHA"]} {header["DELTA"]}', unit=(u.hourangle, u.deg), frame='icrs')
+        except:
+            print('ERROR: can\'t find coords in header')
+            return False
     shell = f'C:/Users/Администратор/AppData/Local/cygwin_ansvr/bin/mintty.exe /bin/bash -l solve-field --ra {cord.ra.deg} --dec {cord.dec.deg} --downsample 2 --radius 0.7 --depth {depth} --sigma {sigma} --no-remove-lines --overwrite --no-verify --no-verify-uniformize --no-verify-dedup -L {0.55 * binning} -H {0.75 * binning} -u app -O -p -r -t 2 -M none -R none -S none -P none -B none -U none -N none -l 60 \"/cygdrive/{file_name.replace(":", "")}\"'
     print(shell)
     try:
